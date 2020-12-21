@@ -4542,7 +4542,7 @@ class Benchmark {
             reads_done++;
             thread->stats.FinishedOps(nullptr, db, 1, kRead);
         } else {
-            rand_key = thread->rand.Next() % (FLAGS_num / 10);
+            rand_key = thread->rand.Next() % (FLAGS_num);
             a = std::to_string(rand_key);
             a += '\0';
             key = Slice(a.c_str());
