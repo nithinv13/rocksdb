@@ -19,6 +19,7 @@ std::string kDBPath = "/tmp/rocksdb_simple_example";
 #endif
 
 int main() {
+  printf("%s\n", "In the main function");
   DB* db;
   Options options;
   // Optimize RocksDB. This is the easiest way to get RocksDB to perform well
@@ -28,7 +29,7 @@ int main() {
   options.create_if_missing = true;
 
   // open DB
-  Status s = DB::Open(options, kDBPath, &db);
+  rocksdb::Status s = DB::Open(options, kDBPath, &db);
   assert(s.ok());
 
   // Put key-value
