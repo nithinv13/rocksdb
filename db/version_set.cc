@@ -6283,4 +6283,16 @@ Status ReactiveVersionSet::MaybeSwitchManifest(
   return s;
 }
 
+// bool Version::FillData(const ReadOptions &options, FileMetaData *meta, adgMod::LearnedIndexData* data) {
+//   return vset_->table_cache_->FillData(options, meta, data);
+// }
+
+// void::Version::FileLearn() {
+//   for (int i = 0; i < 7; ++i) {
+//     for (FileMetaData* file_meta : files_[i]) {
+//       adgMod::LearnedIndexData::FileLearn(new adgMod::MetaAndSelf{this, adgMod::db->version_count, file_meta, adgMod::file_data->GetModel(file_meta->number), i});
+//     }
+//   }
+// }
+
 }  // namespace ROCKSDB_NAMESPACE

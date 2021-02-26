@@ -934,6 +934,7 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 
     r->last_key.assign(key.data(), key.size());
     r->data_block.Add(key, value);
+    printf("%s::%s:%s\n", "Adding KV in BBTB", key.data(), value.data());
     if (r->state == Rep::State::kBuffered) {
       // Buffer keys to be replayed during `Finish()` once compression
       // dictionary has been finalized.

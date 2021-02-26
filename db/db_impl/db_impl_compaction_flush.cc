@@ -994,6 +994,8 @@ Status DBImpl::CompactFiles(const CompactionOptions& compact_options,
     return Status::InvalidArgument("ColumnFamilyHandle must be non-null.");
   }
 
+  printf("%s\n", "In Compact files db_impl_compaction_flush");
+
   auto cfd =
       static_cast_with_check<ColumnFamilyHandleImpl>(column_family)->cfd();
   assert(cfd);
@@ -1061,6 +1063,13 @@ Status DBImpl::CompactFilesImpl(
     std::vector<std::string>* const output_file_names, const int output_level,
     int output_path_id, JobContext* job_context, LogBuffer* log_buffer,
     CompactionJobInfo* compaction_job_info) {
+  printf("%s\n", "call inside CompactFilesImpl");
+  for (std::string file: input_file_names) {
+    printf("%s\n", file.c_str());
+  }
+  for (std::string file: *output_file_names) {
+    printf("%s\n", file.c_str());
+  }
   mutex_.AssertHeld();
 
   if (shutting_down_.load(std::memory_order_acquire)) {

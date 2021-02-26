@@ -1150,6 +1150,8 @@ class DB {
       const int output_path_id = -1,
       std::vector<std::string>* const output_file_names = nullptr,
       CompactionJobInfo* compaction_job_info = nullptr) {
+    
+    printf("%s\n", "In compact files in db.h");
     return CompactFiles(compact_options, DefaultColumnFamily(),
                         input_file_names, output_level, output_path_id,
                         output_file_names, compaction_job_info);
