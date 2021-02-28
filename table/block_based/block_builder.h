@@ -37,7 +37,7 @@ class BlockBuilder {
 
   // REQUIRES: Finish() has not been called since the last call to Reset().
   // REQUIRES: key is larger than any previously added key
-  void Add(const Slice& key, const Slice& value,
+  uint64_t Add(const Slice& key, const Slice& value,
            const Slice* const delta_value = nullptr);
 
   // Finish building the block and return a slice that refers to the
@@ -65,6 +65,8 @@ class BlockBuilder {
   const bool use_delta_encoding_;
   // Refer to BlockIter::DecodeCurrentValue for format of delta encoded values
   const bool use_value_delta_encoding_;
+
+  uint64_t offset;                  // key offset within a block
 
   std::string buffer_;              // Destination buffer
   std::vector<uint32_t> restarts_;  // Restart points

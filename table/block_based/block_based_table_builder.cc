@@ -277,6 +277,8 @@ struct BlockBasedTableBuilder::Rep {
   std::vector<std::unique_ptr<UncompressionContext>> verify_ctxs;
   std::unique_ptr<UncompressionDict> verify_dict;
 
+  std::vector<std::pair<Slice, uint64_t>> key_offsets;
+
   size_t data_begin_offset = 0;
 
   TableProperties props;
@@ -499,6 +501,8 @@ struct BlockBasedTableBuilder::Rep {
     if (!ReifyDbHostIdProperty(ioptions.env, &db_host_id).ok()) {
       ROCKS_LOG_INFO(ioptions.info_log, "db_host_id property will not be set");
     }
+
+    key_offsets.clear();
   }
 
   Rep(const Rep&) = delete;
@@ -933,8 +937,10 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
     }
 
     r->last_key.assign(key.data(), key.size());
-    r->data_block.Add(key, value);
-    printf("%s::%s:%s\n", "Adding KV in BBTB", key.data(), value.data());
+    auto buffer_offset = r->data_block.Add(key, value);
+    r->key_offsets.push_back({key, buffer_offset + r->get_offset()});
+    
+    // printf("%s::%s:%s\n", "Adding KV in BBTB", key.data(), value.data());
     if (r->state == Rep::State::kBuffered) {
       // Buffer keys to be replayed during `Finish()` once compression
       // dictionary has been finalized.
@@ -990,6 +996,8 @@ void BlockBasedTableBuilder::Flush() {
                                              r->get_offset());
     r->pc_rep->EmitBlock(block_rep);
   } else {
+    printf("buffer size : %ld\n", (long)r->data_block.CurrentSizeEstimate());
+    printf("block offset : %ld, data begin offset : %ld\n", (long)r->get_offset(), (long)r->data_begin_offset);
     WriteBlock(&r->data_block, &r->pending_handle, true /* is_data_block */);
   }
 }
