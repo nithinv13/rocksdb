@@ -84,7 +84,7 @@ namespace adgMod {
         bool Learned(FileMetaData* meta, int level);
         std::vector<std::string>& GetData(FileMetaData* meta);
         std::pair<uint64_t, uint64_t> GetPosition(const Slice& key, int file_num);
-        void StoreSegments(std::vector<Segment> segments);
+        void StoreSegments(std::string file_name, std::vector<Segment> segments);
         std::vector<Segment> GetSegments(FileMetaData* file);
         LearnedIndexData* GetModel(int number);
         void Report();

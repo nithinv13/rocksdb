@@ -16,24 +16,24 @@
 
 namespace adgMod {
 
-    std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key, std::vector<Segment> segments) const {
+    std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key, std::vector<Segment> segments, long double error) const {
         assert(segments.size() > 1);
 
         // check if the key is within the model bounds
-        if (target_key.data() > max_key.data()) return std::make_pair(size, size);
-        if (target_key.data() < min_key.data()) return std::make_pair(size, size);
+        if (target_key.ToString().compare(max_key.ToString()) > 0) return std::make_pair(size, size);
+        if (target_key.ToString().compare(min_key.ToString()) < 0) return std::make_pair(size, size);
 
         // binary search between segments
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
         while (left != right - 1) {
             uint32_t mid = (right + left) / 2;
-            if (target_key.data() < segments[mid].start_key.data()) right = mid;
+            if (target_key.ToString().compare(segments[mid].start_key.ToString()) < 0) right = mid;
             else left = mid;
         }
 
         // calculate the interval according to the selected segment
         uint32_t shared = segments[left].shared;
-        long double unshared_double = stoll(target_key.ToString().substr(shared, shared + 64));
+        long double unshared_double = (long double)(stoll(target_key.ToString().substr(shared, shared + 8)));
         long double result = unshared_double * segments[left].k + segments[left].b;
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);

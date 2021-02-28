@@ -101,7 +101,9 @@ GreedyPLR::current_segment() {
 
 Segment
 GreedyPLR::process__(struct point pt, struct point last_pt) {
-    if (!(is_above(pt, this->rho_lower) && is_below(pt, this->rho_upper)) || (last_pt.shared != pt.shared)) {
+    std::string last_string = last_pt.key.ToString().substr(0, last_pt.shared);
+    std::string current_string = pt.key.ToString().substr(0, pt.shared);
+    if (!(is_above(pt, this->rho_lower) && is_below(pt, this->rho_upper)) || (last_string.compare(current_string) != 0)) {
         Segment prev_segment = current_segment();
         this->s0 = pt;
         this->state = "need1";
@@ -176,7 +178,7 @@ std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, uint64_t> >& k
 }
 
 point get_unshared_point(const Slice& key, uint64_t offset, uint32_t minn_shared) {
-    std::string x_str = key.ToString().substr(minn_shared, minn_shared + 64);
+    std::string x_str = key.ToString().substr(minn_shared, minn_shared + 8);
     long double x = (long double) stoll(x_str);
     return point(key, minn_shared, x, offset);
 }
