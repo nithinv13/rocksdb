@@ -7,5 +7,4 @@
 
 #ifndef ROCKSDB_NAMESPACE
 #define ROCKSDB_NAMESPACE rocksdb
-typedef unsigned long long uint64_t;
 #endif

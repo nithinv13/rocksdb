@@ -137,11 +137,14 @@ Slice BlockBuilder::Finish() {
   return Slice(buffer_);
 }
 
-void BlockBuilder::Add(const Slice& key, const Slice& value,
+uint64_t BlockBuilder::Add(const Slice& key, const Slice& value,
                        const Slice* const delta_value) {
   assert(!finished_);
   assert(counter_ <= block_restart_interval_);
   assert(!use_value_delta_encoding_ || delta_value);
+
+  offset = estimate_;
+  
   size_t shared = 0;  // number of bytes shared with prev key
   if (counter_ >= block_restart_interval_) {
     // Restart compression
@@ -185,8 +188,11 @@ void BlockBuilder::Add(const Slice& key, const Slice& value,
   // looking at the shared bytes size.
   if (shared != 0 && use_value_delta_encoding_) {
     buffer_.append(delta_value->data(), delta_value->size());
+    printf("delta_value : %s\n", delta_value->data());
+
   } else {
     buffer_.append(value.data(), value.size());
+    printf("value : %s\n", value.data());
   }
 
   if (data_block_hash_index_builder_.Valid()) {
@@ -196,6 +202,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value,
 
   counter_++;
   estimate_ += buffer_.size() - curr_size;
+  return offset;
 }
 
 }  // namespace ROCKSDB_NAMESPACE
