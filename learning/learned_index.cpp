@@ -8,15 +8,12 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
-#include "util/mutexlock.h"
 #include "learning/learned_index.h"
-#include "util.h"
 #include "db/version_set.h"
-#include "learning/plr.h"
 
 namespace adgMod {
 
-    std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key, std::vector<Segment> segments, long double error) const {
+    std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key) const {
         assert(segments.size() > 1);
 
         // check if the key is within the model bounds
@@ -93,7 +90,7 @@ namespace adgMod {
         for (Segment& item: segments) {
             output_file << item.start_key.data() << " " << item.shared << " " << item.k << " " << item.b << "\n";
         }
-        output_file << "StartAcc" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
+        output_file << "StartAcc" << " " << min_key.data() << " " << max_key.data() << " " << size << " " << level << " " << "\n";
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
@@ -109,7 +106,10 @@ namespace adgMod {
             input_file >> shared >> k >> b;
             segments.emplace_back(Slice(start_key_data), shared, k, b);
         }
-        input_file >> min_key >> max_key >> size >> level;
+        string min_key_str, max_key_str; 
+        input_file >> min_key_str >> max_key_str >> size >> level;
+        min_key = Slice(min_key_str);
+        max_key = Slice(max_key_str);
 
         learned.store(true);
     }
@@ -119,26 +119,26 @@ namespace adgMod {
         return;
     }
 
-    std::vector<Segment> FileLearnedIndexData::GetSegments(FileMetaData* file) {
+    std::vector<Segment> FileLearnedIndexData::GetSegments(std::string file_name) {
         // std::string file_name = std::to_string(file->fd.GetNumber());
-        std::string file_name = "";
         return file_to_segments[file_name];
     }
 
-    bool FileLearnedIndexData::Learned(FileMetaData* meta, int level) {
+    bool FileLearnedIndexData::Learned(FileMetaData* meta = nullptr, int level = -1) {
+        assert(meta == nullptr && level == -1);
         return false;
     }
 
     std::pair<uint64_t, uint64_t> FileLearnedIndexData::GetPosition(const Slice &key, std::string file_name) {
-        std::vector<Segment> segments = file_to_segments[file_name];
+        auto segments = file_to_segments[file_name];
         LearnedIndexData lid;
-        lid.GetPosition(key, segments);
+        return lid.GetPosition(key);
     }
 
     FileLearnedIndexData::~FileLearnedIndexData() {
         rocksdb::MutexLock l(&mutex);
         for (auto pointer: file_to_segments) {
-            delete pointer;
+            delete &pointer;
         }
     }
 }

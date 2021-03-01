@@ -8,11 +8,12 @@
 
 #include <vector>
 #include <cstring>
-#include "util.h"
 #include <atomic>
-#include "mod/plr.h"
+#include <unordered_map>
 #include "rocksdb/slice.h"
-#include "rocksdb/version.h"
+#include "db/version_edit.h"
+#include "port/likely.h"
+#include "learning/plr.h"
 
 using std::string;
 using rocksdb::Slice;
@@ -28,7 +29,7 @@ namespace adgMod {
     class LearnedIndexData {
     private:
         // predefined model error
-        double error;
+        long double error;
         // some flags used in online learning to control the state of the model
         std::atomic<bool> learned;
         std::atomic<bool> aborted;
@@ -43,7 +44,6 @@ namespace adgMod {
         Slice max_key;
         uint64_t size;
 
-    public:
         // all keys in the file with offsets to be learned from
         std::vector<std::pair<Slice, uint64_t> > keys_with_offsets;
 
@@ -57,7 +57,7 @@ namespace adgMod {
         // If the key is in the training set, the output interval guarantees to include the key
         // otherwise, the output is undefined!
         // If the output lower bound is larger than MaxPosition(), the target key is not in the file
-        std::pair<uint64_t, uint64_t> GetPosition(const Slice& key, std::vector<Segment> segments) const;
+        std::pair<uint64_t, uint64_t> GetPosition(const Slice& key) const;
         uint64_t MaxPosition() const;
         double GetError() const;
         
@@ -76,16 +76,16 @@ namespace adgMod {
     // an array storing all file models and provide similar access interface with multithread protection
     class FileLearnedIndexData {
     private:
-        rocksdb::port::Mutex mutex;
+        port::Mutex mutex;
         // std::vector<LearnedIndexData*> file_learned_index_data;
-        std::map<std::string, std::vector<Segment> > file_to_segments;
+        std::unordered_map<std::string, std::vector<Segment> > file_to_segments;
     public:
         uint64_t watermark;
         bool Learned(FileMetaData* meta, int level);
         std::vector<std::string>& GetData(FileMetaData* meta);
-        std::pair<uint64_t, uint64_t> GetPosition(const Slice& key, int file_num);
+        std::pair<uint64_t, uint64_t> GetPosition(const Slice& key, std::string file_name);
         void StoreSegments(std::string file_name, std::vector<Segment> segments);
-        std::vector<Segment> GetSegments(FileMetaData* file);
+        std::vector<Segment> GetSegments(std::string file_name);
         LearnedIndexData* GetModel(int number);
         void Report();
         ~FileLearnedIndexData();

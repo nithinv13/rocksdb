@@ -11,10 +11,15 @@ struct point {
     Slice key;
     uint32_t shared;
     long double x;
-    double y;
+    long double y;
 
     point() = default;
-    point(Slice key, uint32_t shared, double x, double y) : key(key), shared(shared), x(x), y(y) {}
+    point(Slice key_, uint32_t shared_, long double x_, long double y_) {
+        key = key_;
+        shared = shared_;
+        x = x_;
+        y = y_;
+    }
 };
 
 struct line {

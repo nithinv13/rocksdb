@@ -614,3 +614,7 @@ JNI_NATIVE_SOURCES =                                          \
   java/rocksjni/write_batch_test.cc                           \
   java/rocksjni/write_batch_with_index.cc                     \
   java/rocksjni/write_buffer_manager.cc
+
+LEARNING_SRCS =                                               \
+  learning/plr.cpp                                            \
+  learning/learned_index.cpp                                    \

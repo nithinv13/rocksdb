@@ -1,5 +1,4 @@
-#include "plr.h"
-#include "util.h"
+#include "learning/plr.h"
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -52,9 +51,9 @@ get_lower_bound(struct point pt, double gamma) {
     return p;
 }
 
-GreedyPLR::GreedyPLR(double gamma) {
+GreedyPLR::GreedyPLR(double gamma_) {
     this->state = "need2";
-    this->gamma = gamma;
+    this->gamma = gamma_;
 }
 
 int counter = 0;
@@ -100,8 +99,8 @@ GreedyPLR::current_segment() {
 }
 
 Segment
-GreedyPLR::process__(struct point pt, struct point last_pt) {
-    std::string last_string = last_pt.key.ToString().substr(0, last_pt.shared);
+GreedyPLR::process__(struct point pt, struct point last_pt_) {
+    std::string last_string = last_pt_.key.ToString().substr(0, last_pt_.shared);
     std::string current_string = pt.key.ToString().substr(0, pt.shared);
     if (!(is_above(pt, this->rho_lower) && is_below(pt, this->rho_upper)) || (last_string.compare(current_string) != 0)) {
         Segment prev_segment = current_segment();
@@ -144,15 +143,15 @@ GreedyPLR::finish() {
     }
 }
 
-PLR::PLR(double gamma) {
-    this->gamma = gamma;
+PLR::PLR(double gamma_) {
+    this->gamma = gamma_;
 }
 
 std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, uint64_t> >& keys, uint32_t shared_threshold) {
     size_t size = keys.size();
     Slice first_key;
     std::vector<uint32_t> minn_shared;
-    for (int i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         if (i == 0) {
             first_key = keys[i].first;
             minn_shared.push_back(static_cast<uint32_t>(keys[i].first.size()));
@@ -168,7 +167,6 @@ std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, uint64_t> >& k
         }
     }
 
-    uint32_t minn;
     for (int i = size-2; i >= 0; i--) {
         if (minn_shared[i] != keys[i].first.size() && minn_shared[i+1] != keys[i+1].first.size()) {
             minn_shared[i] = std::min(minn_shared[i], minn_shared[i+1]);
@@ -184,13 +182,14 @@ point get_unshared_point(const Slice& key, uint64_t offset, uint32_t minn_shared
 }
 
 std::vector<Segment>
-PLR::train(std::vector<std::pair<Slice, uint64_t> >& keys, bool file) {
+PLR::train(std::vector<std::pair<Slice, uint64_t> >& keys, bool file_level_learning=true) {
+    assert(file_level_learning);
+        
     GreedyPLR plr(this->gamma);
-    int count = 0;
     size_t size = keys.size();
     std::vector<uint32_t> minn_shared = get_min_shared(keys, 8);
 
-    for (int i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         point p = get_unshared_point(keys[i].first, keys[i].second, minn_shared[i]);
         Segment seg = plr.process(p);
         if (seg.start_key != "" ||

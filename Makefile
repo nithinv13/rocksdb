@@ -501,6 +501,7 @@ endif
 
 OBJ_DIR?=.
 LIB_OBJECTS = $(patsubst %.cc, $(OBJ_DIR)/%.o, $(LIB_SOURCES))
+LEARN = $(patsubst %.cpp, $(OBJ_DIR)/%.o, $(LEARNING_SRCS))
 ifeq ($(HAVE_POWER8),1)
 LIB_OBJECTS += $(patsubst %.c, $(OBJ_DIR)/%.o, $(LIB_SOURCES_C))
 LIB_OBJECTS += $(patsubst %.S, $(OBJ_DIR)/%.o, $(LIB_SOURCES_ASM))
@@ -856,6 +857,8 @@ test_libs: $(TEST_LIBS)
 benchmarks: $(BENCHMARKS)
 
 dbg: $(LIBRARY) $(BENCHMARKS) tools $(TESTS)
+
+learn : $(LEARN)
 
 # creates library and programs
 release: clean
