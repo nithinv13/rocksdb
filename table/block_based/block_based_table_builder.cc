@@ -21,6 +21,7 @@
 
 #include "db/dbformat.h"
 #include "index_builder.h"
+#include "learning/learned_index.h"
 
 #include "rocksdb/cache.h"
 #include "rocksdb/comparator.h"
@@ -252,6 +253,9 @@ struct BlockBasedTableBuilder::Rep {
   const InternalKeyComparator& internal_comparator;
   WritableFileWriter* file;
   std::atomic<uint64_t> offset;
+
+  std::atomic<uint64_t> last_offset;
+  
   size_t alignment;
   BlockBuilder data_block;
   // Buffers uncompressed data blocks and keys to replay later. Needed when
@@ -277,7 +281,7 @@ struct BlockBasedTableBuilder::Rep {
   std::vector<std::unique_ptr<UncompressionContext>> verify_ctxs;
   std::unique_ptr<UncompressionDict> verify_dict;
 
-  std::vector<std::pair<Slice, uint64_t>> key_offsets;
+  std::vector<std::pair<Slice, long double>> key_offsets;
 
   size_t data_begin_offset = 0;
 
@@ -416,6 +420,7 @@ struct BlockBasedTableBuilder::Rep {
         internal_comparator(icomparator),
         file(f),
         offset(0),
+        last_offset(0),
         alignment(table_options.block_align
                       ? std::min(table_options.block_size, kDefaultPageSize)
                       : 0),
@@ -938,7 +943,7 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 
     r->last_key.assign(key.data(), key.size());
     auto buffer_offset = r->data_block.Add(key, value);
-    r->key_offsets.push_back({key, buffer_offset + r->get_offset()});
+    r->key_offsets.push_back({key, (buffer_offset * (r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed))/(long double)r->data_block.CurrentSizeEstimate()) + r->get_offset()});
     
     // printf("%s::%s:%s\n", "Adding KV in BBTB", key.data(), value.data());
     if (r->state == Rep::State::kBuffered) {
@@ -996,8 +1001,8 @@ void BlockBasedTableBuilder::Flush() {
                                              r->get_offset());
     r->pc_rep->EmitBlock(block_rep);
   } else {
-    printf("buffer size : %ld\n", (long)r->data_block.CurrentSizeEstimate());
-    printf("block offset : %ld, data begin offset : %ld\n", (long)r->get_offset(), (long)r->data_begin_offset);
+    // printf("buffer size : %ld\n", (long)r->data_block.CurrentSizeEstimate());
+    // printf("block offset : %ld, data begin offset : %ld\n", (long)r->get_offset(), (long)r->data_begin_offset);
     WriteBlock(&r->data_block, &r->pending_handle, true /* is_data_block */);
   }
 }
@@ -1172,6 +1177,9 @@ void BlockBasedTableBuilder::WriteRawBlock(const Slice& block_contents,
   Status s = Status::OK();
   IOStatus io_s = IOStatus::OK();
   StopWatch sw(r->ioptions.env, r->ioptions.statistics, WRITE_RAW_BLOCK_MICROS);
+
+  r->last_offset.store(r->get_offset(), std::memory_order_relaxed);
+  
   handle->set_offset(r->get_offset());
   handle->set_size(block_contents.size());
   assert(status().ok());
@@ -1764,6 +1772,11 @@ Status BlockBasedTableBuilder::Finish() {
   r->SetStatus(r->CopyIOStatus());
   Status ret_status = r->CopyStatus();
   assert(!ret_status.ok() || io_status().ok());
+
+  adgMod::LearnedIndexData LID;
+  // auto segs = LID.Learn(r->key_offsets);
+  // LID.WriteModel("/tmp/model.txt");
+
   return ret_status;
 }
 

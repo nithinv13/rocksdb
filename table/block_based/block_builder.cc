@@ -188,11 +188,11 @@ uint64_t BlockBuilder::Add(const Slice& key, const Slice& value,
   // looking at the shared bytes size.
   if (shared != 0 && use_value_delta_encoding_) {
     buffer_.append(delta_value->data(), delta_value->size());
-    printf("delta_value : %s\n", delta_value->data());
+    // printf("delta_value : %s\n", delta_value->data());
 
   } else {
     buffer_.append(value.data(), value.size());
-    printf("value : %s\n", value.data());
+    // printf("value : %s\n", value.data());
   }
 
   if (data_block_hash_index_builder_.Valid()) {

@@ -21,7 +21,7 @@ using namespace ROCKSDB_NAMESPACE;
 
 namespace adgMod {
 
-    double model_error = 8*128;
+    // double model_error = 8*128;
 
     class LearnedIndexData;
 
@@ -45,11 +45,11 @@ namespace adgMod {
         uint64_t size;
 
         // all keys in the file with offsets to be learned from
-        std::vector<std::pair<Slice, uint64_t> > keys_with_offsets;
+        std::vector<std::pair<Slice, long double> > keys_with_offsets;
 
         int level;
 
-        explicit LearnedIndexData() : error(adgMod::model_error), learned(false), aborted(false), learning(false),
+        explicit LearnedIndexData() : error(1024.0), learned(false), aborted(false), learning(false),
             filled(false), level(0) {};
         LearnedIndexData(const LearnedIndexData& other) = delete;
 
@@ -62,7 +62,7 @@ namespace adgMod {
         double GetError() const;
         
         // Learning function and checker (check if this model is available)
-        std::vector<Segment> Learn(std::vector<std::pair<Slice, uint64_t> > input);
+        std::vector<Segment> Learn(std::vector<std::pair<Slice, long double> > input);
         bool Learned();
 
         // writing this model to disk and load this model from disk

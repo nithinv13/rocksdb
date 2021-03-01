@@ -147,13 +147,14 @@ PLR::PLR(double gamma_) {
     this->gamma = gamma_;
 }
 
-std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, uint64_t> >& keys, uint32_t shared_threshold) {
+std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, long double> >& keys, uint32_t shared_threshold) {
     size_t size = keys.size();
     Slice first_key;
     std::vector<uint32_t> minn_shared;
     for (size_t i = 0; i < size; i++) {
         if (i == 0) {
             first_key = keys[i].first;
+            // rounding off the keys to nearest int here
             minn_shared.push_back(static_cast<uint32_t>(keys[i].first.size()));
             continue;
         }
@@ -182,7 +183,7 @@ point get_unshared_point(const Slice& key, uint64_t offset, uint32_t minn_shared
 }
 
 std::vector<Segment>
-PLR::train(std::vector<std::pair<Slice, uint64_t> >& keys, bool file_level_learning=true) {
+PLR::train(std::vector<std::pair<Slice, long double> >& keys, bool file_level_learning=true) {
     assert(file_level_learning);
         
     GreedyPLR plr(this->gamma);

@@ -50,7 +50,7 @@ namespace adgMod {
     }
 
     // Actual function doing learning
-    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<Slice, uint64_t> > input) {
+    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<Slice, long double> > input) {
         // FILL IN GAMMA (error)
         PLR plr = PLR(error);
 

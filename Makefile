@@ -838,7 +838,7 @@ endif  # PLATFORM_SHARED_EXT
 	blackbox_crash_test_with_best_efforts_recovery
 
 
-all: $(LIBRARY) $(BENCHMARKS) tools tools_lib test_libs $(TESTS)
+all: $(LIBRARY) $(BENCHMARKS) tools tools_lib test_libs $(TESTS) $(LEARN)
 
 all_but_some_tests: $(LIBRARY) $(BENCHMARKS) tools tools_lib test_libs $(ROCKSDBTESTS_SUBSET)
 
@@ -1324,9 +1324,9 @@ package:
 # ---------------------------------------------------------------------------
 # 	Unit tests and tools
 # ---------------------------------------------------------------------------
-$(STATIC_LIBRARY): $(LIB_OBJECTS)
+$(STATIC_LIBRARY): $(LIB_OBJECTS) $(LEARN)
 	$(AM_V_AR)rm -f $@ $(SHARED1) $(SHARED2) $(SHARED3) $(SHARED4)
-	$(AM_V_at)$(AR) $(ARFLAGS) $@ $(LIB_OBJECTS)
+	$(AM_V_at)$(AR) $(ARFLAGS) $@ $(LIB_OBJECTS) $(LEARN)
 
 $(STATIC_TEST_LIBRARY): $(TEST_OBJECTS)
 	$(AM_V_AR)rm -f $@ $(SHARED_TEST_LIBRARY)
