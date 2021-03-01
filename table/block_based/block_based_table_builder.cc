@@ -60,6 +60,8 @@ extern const std::string kHashIndexPrefixesMetadataBlock;
 // Without anonymous namespace here, we fail the warning -Wmissing-prototypes
 namespace {
 
+typedef uint64_t key_type;
+
 // Create a filter block builder based on its type.
 FilterBlockBuilder* CreateFilterBlockBuilder(
     const ImmutableCFOptions& /*opt*/, const MutableCFOptions& mopt,
@@ -281,7 +283,7 @@ struct BlockBasedTableBuilder::Rep {
   std::vector<std::unique_ptr<UncompressionContext>> verify_ctxs;
   std::unique_ptr<UncompressionDict> verify_dict;
 
-  std::vector<std::pair<Slice, long double>> key_offsets;
+  std::vector<std::pair<Slice, key_type>> key_offsets;
 
   size_t data_begin_offset = 0;
 
@@ -945,7 +947,7 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
     auto buffer_offset = r->data_block.Add(key, value);
     r->key_offsets.push_back({key, (buffer_offset * (r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed))/(long double)r->data_block.CurrentSizeEstimate()) + r->get_offset()});
     
-    // printf("%s::%s:%s\n", "Adding KV in BBTB", key.data(), value.data());
+    printf("Adding KV in BBTB : %s\n", key.ToString().c_str());
     if (r->state == Rep::State::kBuffered) {
       // Buffer keys to be replayed during `Finish()` once compression
       // dictionary has been finalized.
@@ -1774,8 +1776,11 @@ Status BlockBasedTableBuilder::Finish() {
   assert(!ret_status.ok() || io_status().ok());
 
   adgMod::LearnedIndexData LID;
-  // auto segs = LID.Learn(r->key_offsets);
-  // LID.WriteModel("/tmp/model.txt");
+  // for (auto val : r->key_offsets) {
+  //   printf("%s -> %ld\n", val.first.data(), (long)val.first.size());
+  // }
+  auto segs = LID.Learn(r->key_offsets);
+  LID.WriteModel("/tmp/model.txt");
 
   return ret_status;
 }

@@ -45,7 +45,7 @@ namespace adgMod {
         uint64_t size;
 
         // all keys in the file with offsets to be learned from
-        std::vector<std::pair<Slice, long double> > keys_with_offsets;
+        std::vector<std::pair<Slice, key_type> > keys_with_offsets;
 
         int level;
 
@@ -62,7 +62,7 @@ namespace adgMod {
         double GetError() const;
         
         // Learning function and checker (check if this model is available)
-        std::vector<Segment> Learn(std::vector<std::pair<Slice, long double> > input);
+        std::vector<Segment> Learn(std::vector<std::pair<Slice, key_type> > input);
         bool Learned();
 
         // writing this model to disk and load this model from disk

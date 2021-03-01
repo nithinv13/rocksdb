@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 // Code modified from https://github.com/RyanMarcus/plr
 
@@ -147,14 +148,14 @@ PLR::PLR(double gamma_) {
     this->gamma = gamma_;
 }
 
-std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, long double> >& keys, uint32_t shared_threshold) {
+std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, key_type> >& keys, uint32_t shared_threshold) {
     size_t size = keys.size();
     Slice first_key;
     std::vector<uint32_t> minn_shared;
+    // std::unordered_set<size_t> restart_idxs;
     for (size_t i = 0; i < size; i++) {
         if (i == 0) {
             first_key = keys[i].first;
-            // rounding off the keys to nearest int here
             minn_shared.push_back(static_cast<uint32_t>(keys[i].first.size()));
             continue;
         }
@@ -168,22 +169,36 @@ std::vector<uint32_t> get_min_shared(std::vector<std::pair<Slice, long double> >
         }
     }
 
+    for (auto val : minn_shared) {
+        std::cout << val << std::endl;
+    }
+    
+
     for (int i = size-2; i >= 0; i--) {
         if (minn_shared[i] != keys[i].first.size() && minn_shared[i+1] != keys[i+1].first.size()) {
             minn_shared[i] = std::min(minn_shared[i], minn_shared[i+1]);
         }
     }
+    // for (auto val : minn_shared) {
+    //     std::cout << val << std::endl;
+    // }
     return minn_shared;
 }
 
 point get_unshared_point(const Slice& key, uint64_t offset, uint32_t minn_shared) {
     std::string x_str = key.ToString().substr(minn_shared, minn_shared + 8);
-    long double x = (long double) stoll(x_str);
+    // std::cout << "Key : " << key.ToString() << " , " << key.data() << std::endl;
+    // std::cout << "8 bytes of unshared : " << x_str << " " << x_str.size() <<  std::endl;
+    long double x;
+    if (x_str.size() == 0)
+        x = 0.0f;
+    else
+        x = (long double)stoll(x_str);
     return point(key, minn_shared, x, offset);
 }
 
 std::vector<Segment>
-PLR::train(std::vector<std::pair<Slice, long double> >& keys, bool file_level_learning=true) {
+PLR::train(std::vector<std::pair<Slice, key_type> >& keys, bool file_level_learning=true) {
     assert(file_level_learning);
         
     GreedyPLR plr(this->gamma);
