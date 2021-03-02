@@ -283,7 +283,8 @@ struct BlockBasedTableBuilder::Rep {
   std::vector<std::unique_ptr<UncompressionContext>> verify_ctxs;
   std::unique_ptr<UncompressionDict> verify_dict;
 
-  std::vector<std::pair<Slice, key_type>> key_offsets;
+  std::vector<std::pair<std::string, key_type>> key_offsets;
+  std::vector<std::pair<std::string, key_type>> intra_block_offsets;
 
   size_t data_begin_offset = 0;
 
@@ -945,9 +946,18 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 
     r->last_key.assign(key.data(), key.size());
     auto buffer_offset = r->data_block.Add(key, value);
-    r->key_offsets.push_back({key, (buffer_offset * (r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed))/(long double)r->data_block.CurrentSizeEstimate()) + r->get_offset()});
     
-    printf("Adding KV in BBTB : %s\n", key.ToString().c_str());
+    auto add_key = key.ToString();
+    
+    // printf("Offset = %ld, global offset = %ld, Key inserted : %s\n", (long)buffer_offset, (long)r->get_offset(), add_key.c_str());
+    
+    // for (size_t i = 0; i < r->intra_block_offsets.size(); i++) {
+    //   printf("%s -> %ld\n", r->intra_block_offsets[i].first.c_str(), (long)r->intra_block_offsets[i].second);
+    // }
+    
+    r->intra_block_offsets.push_back({add_key, buffer_offset});
+    
+    // printf("Adding KV in BBTB : %s\n", key.ToString().c_str());
     if (r->state == Rep::State::kBuffered) {
       // Buffer keys to be replayed during `Finish()` once compression
       // dictionary has been finalized.
@@ -1013,7 +1023,12 @@ void BlockBasedTableBuilder::WriteBlock(BlockBuilder* block,
                                         BlockHandle* handle,
                                         bool is_data_block) {
   WriteBlock(block->Finish(), handle, is_data_block);
+  Rep* r = rep_;
+  for (size_t i = 0; i < r->intra_block_offsets.size(); i++) {
+      r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + ((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed))/(long double)r->data_block.CurrentSizeEstimate()});
+  }
   block->Reset();
+  r->intra_block_offsets.clear();
 }
 
 void BlockBasedTableBuilder::WriteBlock(const Slice& raw_block_contents,
@@ -1776,9 +1791,12 @@ Status BlockBasedTableBuilder::Finish() {
   assert(!ret_status.ok() || io_status().ok());
 
   adgMod::LearnedIndexData LID;
-  // for (auto val : r->key_offsets) {
-  //   printf("%s -> %ld\n", val.first.data(), (long)val.first.size());
-  // }
+
+  printf("\n ======= Sending key offsets ============\n");
+  for (size_t i = 0; i < r->key_offsets.size(); i++) {
+    printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+  }
+  printf("\n");
   auto segs = LID.Learn(r->key_offsets);
   LID.WriteModel("/tmp/model.txt");
 

@@ -50,16 +50,17 @@ namespace adgMod {
     }
 
     // Actual function doing learning
-    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<Slice, key_type> > input) {
+    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input) {
         // FILL IN GAMMA (error)
         PLR plr = PLR(error);
         
         // Fill string key with offsets
         keys_with_offsets = input;
 
-        // for (auto val : keys_with_offsets) {
-        //     std::cout << val.first.size() << std::endl; 
-        // }
+        std::cout << "Inside LID\n";
+        for (auto val : keys_with_offsets) {
+            std::cout << val.first.data() << std::endl; 
+        }
         
         // fill in some bounds for the model
         Slice temp = keys_with_offsets.back().first;

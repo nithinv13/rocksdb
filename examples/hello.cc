@@ -77,8 +77,8 @@ int main() {
 
     SstFileWriter sst_file_writer(EnvOptions(), options);
     string file_path = "/tmp/learnedDB/file1.sst";
-    write_ssts(sst_file_writer, "/tmp/learnedDB/file1.sst", 1, 5);
-    write_ssts(sst_file_writer, "/tmp/learnedDB/file2.sst", 4, 9);
+    write_ssts(sst_file_writer, "/tmp/learnedDB/file1.sst", 11, 15);
+    write_ssts(sst_file_writer, "/tmp/learnedDB/file2.sst", 14, 19);
     std::vector<std::string> input_files;
     input_files.push_back("/tmp/learnedDB/file1.sst");
     input_files.push_back("/tmp/learnedDB/file2.sst");
