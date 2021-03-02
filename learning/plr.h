@@ -22,6 +22,10 @@ struct point {
         x = x_;
         y = y_;
     }
+
+    void ToString() {
+        printf("key:%s, shared:%ud, x:%Lf, y:%Lf", key.data(), shared, x, y);
+    }
 };
 
 struct line {
@@ -36,6 +40,15 @@ public:
     uint32_t shared;
     double k;
     double b;
+
+    std::string ToString() {
+        std::string result;
+        result.append("\nStart key:").append(start_key.ToString());
+        result.append("\nShared:").append(std::to_string(shared));
+        result.append("\nk:").append(std::to_string(k));
+        result.append("\nb:").append(std::to_string(b));
+        return result;
+    }
 };
 
 double get_slope(struct point p1, struct point p2);
