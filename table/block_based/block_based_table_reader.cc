@@ -3546,4 +3546,186 @@ void BlockBasedTable::DumpKeyValue(const Slice& key, const Slice& value,
   out_stream << "  ------\n";
 }
 
+Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice& key,
+                            GetContext* get_context,
+                            const SliceTransform* prefix_extractor,
+                            bool skip_filters, FileMetaData& file_meta) {
+  assert(key.size() >= 8);  // key must be internal key
+  assert(get_context != nullptr);
+  Status s;
+  const bool no_io = read_options.read_tier == kBlockCacheTier;
+
+  FilterBlockReader* const filter =
+      !skip_filters ? rep_->filter.get() : nullptr;
+
+  // First check the full filter
+  // If full filter not useful, Then go into each block
+  uint64_t tracing_get_id = get_context->get_tracing_get_id();
+  BlockCacheLookupContext lookup_context{
+      TableReaderCaller::kUserGet, tracing_get_id,
+      /*get_from_user_specified_snapshot=*/read_options.snapshot != nullptr};
+  if (block_cache_tracer_ && block_cache_tracer_->is_tracing_enabled()) {
+    // Trace the key since it contains both user key and sequence number.
+    lookup_context.referenced_key = key.ToString();
+    lookup_context.get_from_user_specified_snapshot =
+        read_options.snapshot != nullptr;
+  }
+  TEST_SYNC_POINT("BlockBasedTable::Get:BeforeFilterMatch");
+  const bool may_match =
+      FullFilterKeyMayMatch(read_options, filter, key, no_io, prefix_extractor,
+                            get_context, &lookup_context);
+  TEST_SYNC_POINT("BlockBasedTable::Get:AfterFilterMatch");
+  if (!may_match) {
+    RecordTick(rep_->ioptions.statistics, BLOOM_FILTER_USEFUL);
+    PERF_COUNTER_BY_LEVEL_ADD(bloom_filter_useful, 1, rep_->level);
+  } else {
+    adgMod::LearnedIndexData lid;
+    std::string file_name = std::to_string(file_meta.fd.packed_number_and_path_id).append(".txt");
+    std::string file_path("/tmp/learnedDB/");
+    file_name.append(file_name);
+    lid.ReadModel(file_path);
+    auto bounds = lid.GetPosition(key);
+    uint64_t lower = bounds.first;
+    uint64_t upper = bounds.second;
+    if (lower > lid.MaxPosition()) return Status::NotFound("Requested key not found");
+    uint64_t offset_lower = (lower / adgMod::block_size) * adgMod::block_size;
+    uint64_t offset_upper = (upper / adgMod::block_size) * adgMod::block_size;
+
+    size_t ts_sz =
+        rep_->internal_comparator.user_comparator()->timestamp_size();
+    bool matched = false;  // if such user key matched a key in SST
+    bool done = false;
+
+    std::vector block_handles{BlockHandle(offset_lower, adgMod::block_size), 
+                              BlockHandle(offset_upper, adgMod::block_size)};
+
+    for (auto block_handle: block_handles) {
+
+      bool not_exist_in_filter = filter != nullptr && filter->IsBlockBased() == true &&
+                              !filter->KeyMayMatch(ExtractUserKeyAndStripTimestamp(key, ts_sz),
+                              prefix_extractor, offset_lower, no_io, 
+                              /*const_ikey_ptr=*/nullptr, get_context,
+                              &lookup_context);
+
+      if (not_exist_in_filter) {
+        RecordTick(rep_->ioptions.statistics, BLOOM_FILTER_USEFUL);
+        PERF_COUNTER_BY_LEVEL_ADD(bloom_filter_useful, 1, rep_->level);
+        continue;
+      }
+
+      // How to check if key falls between this and the previous block is not clear
+      if (!v.first_internal_key.empty() && !skip_filters &&
+          UserComparatorWrapper(rep_->internal_comparator.user_comparator())
+                  .Compare(ExtractUserKey(key),
+                           ExtractUserKey(v.first_internal_key)) < 0) {
+        // The requested key falls between highest key in previous block and
+        // lowest key in current block.
+        continue;
+      }
+
+      BlockCacheLookupContext lookup_data_block_context{
+        TableReaderCaller::kUserGet, tracing_get_id, read_options.snapshot != nullptr};
+
+      bool does_referenced_key_exist = false;
+      DataBlockIter biter;
+      uint64_t referenced_data_size = 0;
+      NewDataBlockIterator<DataBlockIter>(
+        read_options, block_handle, &biter, BlockType::kData, get_context,
+        &lookup_data_block_context, /*s=*/Status(), /*prefetch_buffer*/ nullptr);
+
+      if (no_io && biter.status().IsIncomplete()) {
+        // couldn't get block from block_cache
+        // Update Saver.state to Found because we are only looking for
+        // whether we can guarantee the key is not there when "no_io" is set
+        get_context->MarkKeyMayExist();
+        continue;
+      }
+
+      if (!biter.status().ok()) {
+        s = biter.status();
+        continue;
+      }
+
+      bool may_exist = biter.SeekForGet(key);
+
+      if (!may_exist && ts_sz == 0) {
+          // HashSeek cannot find the key this block and the the iter is not
+          // the end of the block, i.e. cannot be in the following blocks
+          // either. In this case, the seek_key cannot be found, so we break
+          // from the top level for-loop.
+          done = true;
+      } else {
+          for (; biter.Valid(); biter.Next()) {
+            ParsedInternalKey parsed_key;
+            Status pik_status = ParseInternalKey(
+                biter.key(), &parsed_key, false /* log_err_key */);  // TODO
+            if (!pik_status.ok()) {
+              s = pik_status;
+            }
+
+            if (!get_context->SaveValue(
+                    parsed_key, biter.value(), &matched,
+                    biter.IsValuePinned() ? &biter : nullptr)) {
+              if (get_context->State() == GetContext::GetState::kFound) {
+                does_referenced_key_exist = true;
+                referenced_data_size = biter.key().size() + biter.value().size();
+              }
+              done = true;
+              break;
+            }
+          }
+          s = biter.status();
+      }
+
+      if (block_cache_tracer_ && block_cache_tracer_->is_tracing_enabled()) {
+
+        Slice referenced_key;
+        if (does_referenced_key_exist) {
+          referenced_key = biter.key();
+        } else {
+          referenced_key = key;
+        }
+
+        BlockCacheTraceRecord access_record(
+              rep_->ioptions.env->NowMicros(),
+              /*block_key=*/"", lookup_data_block_context.block_type,
+              lookup_data_block_context.block_size, rep_->cf_id_for_tracing(),
+              /*cf_name=*/"", rep_->level_for_tracing(),
+              rep_->sst_number_for_tracing(), lookup_data_block_context.caller,
+              lookup_data_block_context.is_cache_hit,
+              lookup_data_block_context.no_insert,
+              lookup_data_block_context.get_id,
+              lookup_data_block_context.get_from_user_specified_snapshot,
+              /*referenced_key=*/"", referenced_data_size,
+              lookup_data_block_context.num_keys_in_block,
+              does_referenced_key_exist);
+          // TODO: Should handle status here?
+        block_cache_tracer_->WriteBlockAccess(access_record,
+                            lookup_data_block_context.block_key,
+                            rep_->cf_name_for_tracing(), referenced_key).PermitUncheckedError();
+    
+      }
+
+      if (done) {
+          // Avoid looking at the next block
+          break;
+      }
+
+    }
+
+    if (matched && filter != nullptr && !filter->IsBlockBased()) {
+      RecordTick(rep_->ioptions.statistics, BLOOM_FILTER_FULL_TRUE_POSITIVE);
+      PERF_COUNTER_BY_LEVEL_ADD(bloom_filter_full_true_positive, 1,
+                                rep_->level);
+    }
+
+    if (s.ok() && get_context->State() == GetContext::GetState::kFound) {
+      return Status::OK();
+    }
+
+  }
+  
+  return s;
+}
+
 }  // namespace ROCKSDB_NAMESPACE

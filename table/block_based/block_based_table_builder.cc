@@ -1798,7 +1798,13 @@ Status BlockBasedTableBuilder::Finish() {
   }
   printf("\n");
   auto segs = LID.Learn(r->key_offsets);
-  LID.WriteModel("/tmp/model.txt");
+  std::string file_name = r->file->file_name();
+  file_name = file_name.substr(file_name.rfind("/") + 1);
+  file_name = file_name.substr(0, file_name.find("."));
+  file_name.erase(0, file_name.find_first_not_of("0"));
+  std::string file_path("/tmp/learnedDB/");
+  file_path.append(file_name).append(".txt");
+  LID.WriteModel(file_path);
 
   return ret_status;
 }
