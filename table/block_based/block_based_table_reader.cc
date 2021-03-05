@@ -62,6 +62,7 @@
 #include "util/crc32c.h"
 #include "util/stop_watch.h"
 #include "util/string_util.h"
+#include "learning/learned_index.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -3588,16 +3589,20 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
     if (lower > lid.MaxPosition()) return Status::NotFound("Requested key not found");
-    uint64_t offset_lower = (lower / adgMod::block_size) * adgMod::block_size;
-    uint64_t offset_upper = (upper / adgMod::block_size) * adgMod::block_size;
+    uint64_t offset_lower = (lower / rep_->table_options.block_size) * rep_->table_options.block_size;
+    uint64_t offset_upper = (upper / rep_->table_options.block_size) * rep_->table_options.block_size;
 
     size_t ts_sz =
         rep_->internal_comparator.user_comparator()->timestamp_size();
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
 
-    std::vector block_handles{BlockHandle(offset_lower, adgMod::block_size), 
-                              BlockHandle(offset_upper, adgMod::block_size)};
+    std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, rep_->table_options.block_size), 
+                              BlockHandle(offset_upper, rep_->table_options.block_size)};
+
+    if (offset_lower == offset_upper) {
+      block_handles.pop_back();
+    }
 
     for (auto block_handle: block_handles) {
 
@@ -3613,15 +3618,15 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
         continue;
       }
 
-      // How to check if key falls between this and the previous block is not clear
-      if (!v.first_internal_key.empty() && !skip_filters &&
-          UserComparatorWrapper(rep_->internal_comparator.user_comparator())
-                  .Compare(ExtractUserKey(key),
-                           ExtractUserKey(v.first_internal_key)) < 0) {
-        // The requested key falls between highest key in previous block and
-        // lowest key in current block.
-        continue;
-      }
+      // // How to check if key falls between this and the previous block is not clear
+      // if (!v.first_internal_key.empty() && !skip_filters &&
+      //     UserComparatorWrapper(rep_->internal_comparator.user_comparator())
+      //             .Compare(ExtractUserKey(key),
+      //                      ExtractUserKey(v.first_internal_key)) < 0) {
+      //   // The requested key falls between highest key in previous block and
+      //   // lowest key in current block.
+      //   continue;
+      // }
 
       BlockCacheLookupContext lookup_data_block_context{
         TableReaderCaller::kUserGet, tracing_get_id, read_options.snapshot != nullptr};

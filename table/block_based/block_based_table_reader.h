@@ -19,6 +19,7 @@
 #include "table/table_properties_internal.h"
 #include "table/table_reader.h"
 #include "table/two_level_iterator.h"
+#include "db/version_edit.h"
 
 #include "trace_replay/block_cache_tracer.h"
 
@@ -131,6 +132,11 @@ class BlockBasedTable : public TableReader {
   Status Get(const ReadOptions& readOptions, const Slice& key,
              GetContext* get_context, const SliceTransform* prefix_extractor,
              bool skip_filters = false) override;
+
+  Status LearnedGet(const ReadOptions& read_options, const Slice& key,
+                    GetContext* get_context,
+                    const SliceTransform* prefix_extractor,
+                    bool skip_filters, FileMetaData& file_meta) override;
 
   void MultiGet(const ReadOptions& readOptions,
                 const MultiGetContext::Range* mget_range,

@@ -391,6 +391,7 @@ Status TableCache::Get(const ReadOptions& options,
                        const SliceTransform* prefix_extractor,
                        HistogramImpl* file_read_hist, bool skip_filters,
                        int level, size_t max_file_size_for_l0_meta_pin) {
+
   auto& fd = file_meta.fd;
   std::string* row_cache_entry = nullptr;
   bool done = false;
@@ -440,7 +441,12 @@ Status TableCache::Get(const ReadOptions& options,
     }
     if (s.ok()) {
       get_context->SetReplayLog(row_cache_entry);  // nullptr if no cache.
+      if (options.learned_get) {
+        t->LearnedGet(options, k, get_context, prefix_extractor, skip_filters, file_meta);
+      }
+      else {
       s = t->Get(options, k, get_context, prefix_extractor, skip_filters);
+      }
       get_context->SetReplayLog(nullptr);
     } else if (options.read_tier == kBlockCacheTier && s.IsIncomplete()) {
       // Couldn't find Table in cache but treat as kFound if no_io set

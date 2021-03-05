@@ -149,20 +149,20 @@ PLR::PLR(double gamma_) {
     this->gamma = gamma_;
 }
 
-std::vector<uint32_t> get_min_shared(std::vector<std::pair<std::string, key_type> >& keys, uint32_t shared_threshold) {
+std::vector<uint32_t> get_min_shared(std::vector<std::pair<std::string, key_type> >& keys) {
     int size = (int)keys.size();
     Slice first_key;
     std::vector<uint32_t> minn_shared;
     // std::unordered_set<size_t> restart_idxs;
-    std::cout << "shared threshold unused " << shared_threshold << std::endl;
+    // std::cout << "shared threshold unused " << shared_threshold << std::endl;
     for (int i = 0; i < size; i++) {
         if (i == 0) {
             first_key = Slice(keys[i].first);
-            std::cout << "First key " << first_key.data() << std::endl;
+            // std::cout << "First key " << first_key.data() << std::endl;
             minn_shared.push_back(static_cast<uint32_t>(keys[i].first.size()));
             continue;
         }
-        std::cout << "key " << i << " : " << keys[i].first.data() << std::endl;
+        // std::cout << "key " << i << " : " << keys[i].first.data() << std::endl;
         size_t shared = Slice(keys[i].first).difference_offset(first_key);
         if ((minn_shared[i-1] != keys[i-1].first.size()) && (shared != minn_shared[i-1])) {
             first_key = keys[i].first;
@@ -173,32 +173,32 @@ std::vector<uint32_t> get_min_shared(std::vector<std::pair<std::string, key_type
         }
     }
 
-    for (auto val : minn_shared) {
-        std::cout << val << std::endl;
-    }
+    // for (auto val : minn_shared) {
+    //     std::cout << val << std::endl;
+    // }
     
 
     for (int i = size-2; i >= 0; i--) {
         if (minn_shared[i] != keys[i].first.size() && minn_shared[i+1] != keys[i+1].first.size()) {
             minn_shared[i] = std::min(minn_shared[i], minn_shared[i+1]);
-            std::cout << i << " " << minn_shared[i] << std::endl;
+            // std::cout << i << " " << minn_shared[i] << std::endl;
         }
     }
-    std::cout << "PLR min_shared\n";
-    for (auto val : minn_shared) {
-        std::cout << val << std::endl;
-    }
+    // std::cout << "PLR min_shared\n";
+    // for (auto val : minn_shared) {
+    //     std::cout << val << std::endl;
+    // }
     return minn_shared;
 }
 
 point get_unshared_point(std::string& key, uint64_t offset, uint32_t minn_shared) {
-    std::cout << "In get unshared" << std::endl;
+    // std::cout << "In get unshared" << std::endl;
     long double x;
     if (key.size() == minn_shared) x = 0.0f;
     else {
         std::string x_str = key.substr(minn_shared, minn_shared + 8);
         // std::cout << "Key : " << key.ToString() << " , " << key.data() << std::endl;
-        std::cout << "8 bytes of unshared : " << x_str << " " << x_str.size() <<  std::endl;
+        // std::cout << "8 bytes of unshared : " << x_str << " " << x_str.size() <<  std::endl;
         // long double x;
         // if (x_str.size() == 0)
         //     x = 0.0f;
@@ -215,12 +215,12 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
 
     GreedyPLR plr(this->gamma);
     size_t size = keys.size();
-    std::vector<uint32_t> minn_shared = get_min_shared(keys, 8);
+    std::vector<uint32_t> minn_shared = get_min_shared(keys);
 
-    std::cout << "Get min shared" << std::endl;
-    for (auto val: minn_shared) {
-        std::cout << val << std::endl;
-    }
+    // std::cout << "Get min shared" << std::endl;
+    // for (auto val: minn_shared) {
+    //     std::cout << val << std::endl;
+    // }
 
     for (size_t i = 0; i < size; ++i) {
         point p = get_unshared_point(keys[i].first, keys[i].second, minn_shared[i]);
@@ -242,10 +242,10 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
         this->segments.push_back(last);
     }
 
-    std::cout << "Segments formed are" << std::endl;
-    for (auto seg: segments) {
-        std::cout << seg.ToString() << std::endl;
-    }
+    // std::cout << "Segments formed are" << std::endl;
+    // for (auto seg: segments) {
+    //     std::cout << seg.ToString() << std::endl;
+    // }
 
     return this->segments;
 }

@@ -15,6 +15,7 @@
 #include "table/internal_iterator.h"
 #include "table/multiget_context.h"
 #include "table/table_reader_caller.h"
+#include "db/version_edit.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -119,6 +120,11 @@ class TableReader {
                      prefix_extractor, skip_filters);
     }
   }
+
+  virtual Status LearnedGet(const ReadOptions& read_options, const Slice& key,
+                            GetContext* get_context,
+                            const SliceTransform* prefix_extractor,
+                            bool skip_filters, FileMetaData& file_meta) = 0;
 
   // Prefetch data corresponding to a give range of keys
   // Typically this functionality is required for table implementations that

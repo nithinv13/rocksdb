@@ -7,6 +7,9 @@
 #include "rocksdb/iterator.h"
 #include "rocksdb/sst_file_writer.h"
 #include "rocksdb/sst_file_reader.h"
+#include "rocksdb/table.h"
+
+#include <chrono>
 
 using namespace std;
 using namespace ROCKSDB_NAMESPACE;
@@ -45,6 +48,7 @@ void read_sst(Options& options, const std::string file_name) {
     std::unique_ptr<Iterator> iter;
     {
         ReadOptions ropts;
+        ropts.learned_get = true;
         iter.reset(reader.NewIterator(ropts));
     }
     iter->SeekToFirst();
@@ -65,7 +69,11 @@ int main() {
     // cout << "Hi again" << endl;
     DB *db;
     Options options;
+    BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
+    block_based_options.block_align = true;
+    options.table_factory.reset(
+          NewBlockBasedTableFactory(block_based_options));
     IngestExternalFileOptions ifo;
     rocksdb::Status s = DB::Open(options, dbName, &db);
     s = db->Put(WriteOptions(), "key", "value");

@@ -57,10 +57,10 @@ namespace adgMod {
         // Fill string key with offsets
         keys_with_offsets = input;
 
-        std::cout << "Inside LID\n";
-        for (auto val : keys_with_offsets) {
-            std::cout << val.first.data() << std::endl; 
-        }
+        // std::cout << "Inside LID\n";
+        // for (auto val : keys_with_offsets) {
+        //     std::cout << val.first.data() << std::endl; 
+        // }
         
         // fill in some bounds for the model
         Slice temp = keys_with_offsets.back().first;
