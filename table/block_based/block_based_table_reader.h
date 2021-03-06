@@ -19,6 +19,7 @@
 #include "table/table_properties_internal.h"
 #include "table/table_reader.h"
 #include "table/two_level_iterator.h"
+#include "rocksdb/rocksdb_namespace.h"
 
 #include "trace_replay/block_cache_tracer.h"
 

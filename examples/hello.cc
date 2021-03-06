@@ -53,9 +53,9 @@ void read_sst(Options& options, const std::string file_name) {
     }
     iter->SeekToFirst();
     while (iter->Valid()) {
-        #ifdef DBG
+        if (debug == 1) {
             cout << iter->key().data() << " " << iter->value().ToString() << endl;
-        #endif
+        }
         iter->Next();
     }
 }
@@ -81,9 +81,9 @@ int main() {
     std::string value;
     s = db->Get(ReadOptions(), "key", &value);
     assert(s.ok());
-    #ifdef DBG
+    if (debug == 1) {
         printf("%s:%s\n", "key", value.c_str());
-    #endif
+    }
 
     SstFileWriter sst_file_writer(EnvOptions(), options);
     string file_path = "/tmp/learnedDB/file1.sst";
@@ -93,11 +93,11 @@ int main() {
     input_files.push_back("/tmp/learnedDB/file1.sst");
     input_files.push_back("/tmp/learnedDB/file2.sst");
     //compact_files_helper(db, input_files);
-    #ifdef DBG
+    if (debug == 1) {
         for (std::string file: input_files) {
             printf("%s\n", file.c_str());
         }
-    #endif
+    }
     ingest_files(db, ifo, input_files);
 
     // ReadOptions read_options = ReadOptions();
@@ -115,20 +115,23 @@ int main() {
     ColumnFamilyMetaData cf_meta;
     db->GetColumnFamilyMetaData(&cf_meta);
     for (auto level : cf_meta.levels) {
-        #ifdef DBG
+        if (debug == 1) {
             printf("%d\n", level.level);
-        #endif
+        }
         for (auto file : level.files) {
-            #ifdef DBG
+            if (debug == 1) {
                 printf("%s\n", file.name.c_str());
-            #endif
+            }
             read_sst(options, std::string("/tmp/learnedDB/").append(file.name));
         }
     }
 
     ReadOptions read_options = ReadOptions();
     read_options.learned_get = true;
-    s = db->Get(read_options, rocksdb::Slice(std::to_string(217)), &value);
-    printf("%s\n", value.c_str());
+    for (int i = 199; i < 219; i++) {
+        value = "null";
+        s = db->Get(read_options, rocksdb::Slice(std::to_string(i)), &value);
+        printf("VALUE : %s\n", value.c_str());
+    }
     return 0;
 }

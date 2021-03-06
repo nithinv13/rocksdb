@@ -13,23 +13,46 @@
 
 namespace adgMod {
 
+    int compare(std::string s1, std::string s2) {
+        for (uint64_t i = 0; ; i++) {
+            if (debug == 1) {
+                std::cout << s1[i] << "-" << s2[i] << "|\n";
+            }
+            if (i == s1.size()-8 && i == s2.size()-8)
+                return 0;
+            else if (i == s1.size()-8)
+                return -1;
+            else if (i == s2.size()-8)
+                return 1;
+            else {              
+                if (s1[i] < s2[i])
+                    return -1;
+                else if (s1[i] > s2[i])
+                    return 1;
+            }
+        }
+    }
+
     std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key) const {
         assert(segments.size() > 1);
 
         // check if the key is within the model bounds
-        std::cout << target_key.data() << " " << max_key.data() << " " << min_key.data() << " " << std::endl;
         std::string tgt = target_key.ToString();
-        std::string mink = min_key.ToString();
-        std::string maxk = max_key.ToString();
-        if (tgt.compare(mink) < 0) return std::make_pair(size, size);
-        if (maxk.compare(tgt) < 0) return std::make_pair(size, size);
+        if (debug == 1) {
+            std::cout << tgt.size() << " " << max_key.size() << " " << min_key.size() << " " << std::endl;
+            std::cout << compare(tgt, min_key) << " " << compare(tgt, max_key) << std::endl;
+        }
+        if (compare(tgt, min_key) < 0) return std::make_pair(size, size);
+        if (compare(tgt, max_key) > 0) return std::make_pair(size, size);
         
-        std::cout << "Bound check done\n";
+        if (debug == 1) {
+            std::cout << "Bound check done\n";
+        }
         // binary search between segments
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
         while (left != right - 1) {
             uint32_t mid = (right + left) / 2;
-            if (target_key.ToString().compare(segments[mid].start_key.ToString()) < 0) right = mid;
+            if (compare(tgt, segments[mid].start_key.ToString()) < 0) right = mid;
             else left = mid;
         }
 
@@ -100,7 +123,7 @@ namespace adgMod {
         for (Segment& item: segments) {
             output_file << item.start_key.data() << " " << item.shared << " " << item.k << " " << item.b << "\n";
         }
-        output_file << "StartAcc" << " " << min_key.data() << " " << max_key.data() << " " << size << " " << level << " " << "\n";
+        output_file << "StartAcc" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
@@ -119,10 +142,10 @@ namespace adgMod {
             input_file >> shared >> k >> b;
             segments.emplace_back(Slice(start_key_data), shared, k, b);
         }
-        string min_key_str, max_key_str; 
-        input_file >> min_key_str >> max_key_str >> size >> level;
-        min_key = Slice(min_key_str);
-        max_key = Slice(max_key_str);
+        // string min_key_str, max_key_str; 
+        input_file >> min_key >> max_key >> size >> level;
+        // min_key = Slice(min_key_str);
+        // max_key = Slice(max_key_str);
 
         learned.store(true);
     }

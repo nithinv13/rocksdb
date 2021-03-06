@@ -41,8 +41,8 @@ namespace adgMod {
 
         // Learned linear segments and some other data needed
         std::vector<Segment> segments;
-        Slice min_key;
-        Slice max_key;
+        std::string min_key;
+        std::string max_key;
         uint64_t size;
 
         // all keys in the file with offsets to be learned from
