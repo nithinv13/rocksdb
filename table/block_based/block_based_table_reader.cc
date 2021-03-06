@@ -3550,7 +3550,7 @@ void BlockBasedTable::DumpKeyValue(const Slice& key, const Slice& value,
 Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice& key,
                             GetContext* get_context,
                             const SliceTransform* prefix_extractor,
-                            bool skip_filters, FileMetaData& file_meta) {
+                            bool skip_filters, const FileMetaData &file_meta) {
   assert(key.size() >= 8);  // key must be internal key
   assert(get_context != nullptr);
   Status s;

@@ -625,6 +625,19 @@ Status PlainTableReader::Get(const ReadOptions& /*ro*/, const Slice& target,
   return Status::OK();
 }
 
+Status PlainTableReader::LearnedGet(const ReadOptions& read_options, const Slice& key,
+                            GetContext* get_context,
+                            const SliceTransform* prefix_extractor,
+                            bool skip_filters, const FileMetaData& file_meta) {
+                              (void) read_options;
+                              (void) key;
+                              (void) get_context;
+                              (void) prefix_extractor;
+                              (void) skip_filters;
+                              (void) file_meta;
+                              return Status::OK();
+  }
+
 uint64_t PlainTableReader::ApproximateOffsetOf(const Slice& /*key*/,
                                                TableReaderCaller /*caller*/) {
   return 0;

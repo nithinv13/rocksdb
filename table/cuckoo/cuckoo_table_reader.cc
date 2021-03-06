@@ -186,6 +186,19 @@ Status CuckooTableReader::Get(const ReadOptions& /*readOptions*/,
   return Status::OK();
 }
 
+Status CuckooTableReader::LearnedGet(const ReadOptions& read_options, const Slice& key,
+                            GetContext* get_context,
+                            const SliceTransform* prefix_extractor,
+                            bool skip_filters, const FileMetaData& file_meta) {
+                              (void) read_options;
+                              (void) key;
+                              (void) get_context;
+                              (void) prefix_extractor;
+                              (void) skip_filters;
+                              (void) file_meta;
+                              return Status::OK();
+  }
+
 void CuckooTableReader::Prepare(const Slice& key) {
   // Prefetch the first Cuckoo Block.
   Slice user_key = ExtractUserKey(key);

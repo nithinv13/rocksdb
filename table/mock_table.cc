@@ -41,6 +41,11 @@ class MockTableReader : public TableReader {
              GetContext* get_context, const SliceTransform* prefix_extractor,
              bool skip_filters = false) override;
 
+  Status LearnedGet(const ReadOptions& read_options, const Slice& key,
+                    GetContext* get_context,
+                    const SliceTransform* prefix_extractor,
+                    bool skip_filters, const FileMetaData &file_meta) override;
+
   uint64_t ApproximateOffsetOf(const Slice& /*key*/,
                                TableReaderCaller /*caller*/) override {
     return 0;
@@ -220,6 +225,19 @@ Status MockTableReader::Get(const ReadOptions&, const Slice& key,
   }
   return Status::OK();
 }
+
+Status MockTableReader::LearnedGet(const ReadOptions& read_options, const Slice& key,
+                            GetContext* get_context,
+                            const SliceTransform* prefix_extractor,
+                            bool skip_filters, const FileMetaData& file_meta) {
+                              (void) read_options;
+                              (void) key;
+                              (void) get_context;
+                              (void) prefix_extractor;
+                              (void) skip_filters;
+                              (void) file_meta;
+                              return Status::OK();
+  }
 
 std::shared_ptr<const TableProperties> MockTableReader::GetTableProperties()
     const {

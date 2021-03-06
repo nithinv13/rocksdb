@@ -93,6 +93,11 @@ class PlainTableReader: public TableReader {
              GetContext* get_context, const SliceTransform* prefix_extractor,
              bool skip_filters = false) override;
 
+  Status LearnedGet(const ReadOptions& read_options, const Slice& key,
+                    GetContext* get_context,
+                    const SliceTransform* prefix_extractor,
+                    bool skip_filters, const FileMetaData &file_meta) override;
+
   uint64_t ApproximateOffsetOf(const Slice& key,
                                TableReaderCaller caller) override;
 

@@ -9,13 +9,13 @@
 
 #pragma once
 #include <memory>
+#include "db/builder.h"
 #include "db/range_tombstone_fragmenter.h"
 #include "rocksdb/slice_transform.h"
 #include "table/get_context.h"
 #include "table/internal_iterator.h"
 #include "table/multiget_context.h"
 #include "table/table_reader_caller.h"
-#include "db/version_edit.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -124,7 +124,7 @@ class TableReader {
   virtual Status LearnedGet(const ReadOptions& read_options, const Slice& key,
                             GetContext* get_context,
                             const SliceTransform* prefix_extractor,
-                            bool skip_filters, FileMetaData& file_meta) = 0;
+                            bool skip_filters, const FileMetaData &file_meta) = 0;
 
   // Prefetch data corresponding to a give range of keys
   // Typically this functionality is required for table implementations that
