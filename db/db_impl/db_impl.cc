@@ -1610,7 +1610,7 @@ class GetWithTimestampReadCallback : public ReadCallback {
 
 Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
                        GetImplOptions& get_impl_options) {
-  printf("%s\n", "Inside GetImpl on get call");
+  // printf("%s\n", "Inside GetImpl on get call");
   assert(get_impl_options.value != nullptr ||
          get_impl_options.merge_operands != nullptr);
 

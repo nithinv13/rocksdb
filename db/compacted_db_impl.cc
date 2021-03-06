@@ -145,7 +145,7 @@ Status CompactedDBImpl::Init(const Options& options) {
 Status CompactedDBImpl::Open(const Options& options,
                              const std::string& dbname, DB** dbptr) {
   *dbptr = nullptr;
-
+  
   if (options.max_open_files != -1) {
     return Status::InvalidArgument("require max_open_files = -1");
   }

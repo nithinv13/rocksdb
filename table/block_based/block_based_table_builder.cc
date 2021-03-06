@@ -1014,7 +1014,7 @@ void BlockBasedTableBuilder::Flush() {
     r->pc_rep->EmitBlock(block_rep);
   } else {
     // printf("buffer size : %ld\n", (long)r->data_block.CurrentSizeEstimate());
-    printf("block offset : %ld, data begin offset : %ld\n", (long)r->get_offset(), (long)r->data_begin_offset);
+    // printf("block offset : %ld, data begin offset : %ld\n", (long)r->get_offset(), (long)r->data_begin_offset);
     WriteBlock(&r->data_block, &r->pending_handle, true /* is_data_block */);
   }
 }
@@ -1792,11 +1792,13 @@ Status BlockBasedTableBuilder::Finish() {
 
   adgMod::LearnedIndexData LID;
 
-  printf("\n ======= Sending key offsets ============\n");
-  for (size_t i = 0; i < r->key_offsets.size(); i++) {
-    printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+  if (debug == 1) {
+    printf("\n ======= Sending key offsets ============\n");
+    for (size_t i = 0; i < r->key_offsets.size(); i++) {
+      printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+    }
+    printf("\n");
   }
-  printf("\n");
   auto segs = LID.Learn(r->key_offsets);
   std::string file_name = r->file->file_name();
   file_name = file_name.substr(file_name.rfind("/") + 1);

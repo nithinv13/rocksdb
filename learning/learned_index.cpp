@@ -17,9 +17,14 @@ namespace adgMod {
         assert(segments.size() > 1);
 
         // check if the key is within the model bounds
-        if (target_key.ToString().compare(max_key.ToString()) > 0) return std::make_pair(size, size);
-        if (target_key.ToString().compare(min_key.ToString()) < 0) return std::make_pair(size, size);
-
+        std::cout << target_key.data() << " " << max_key.data() << " " << min_key.data() << " " << std::endl;
+        std::string tgt = target_key.ToString();
+        std::string mink = min_key.ToString();
+        std::string maxk = max_key.ToString();
+        if (tgt.compare(mink) < 0) return std::make_pair(size, size);
+        if (maxk.compare(tgt) < 0) return std::make_pair(size, size);
+        
+        std::cout << "Bound check done\n";
         // binary search between segments
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
         while (left != right - 1) {
@@ -99,7 +104,9 @@ namespace adgMod {
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
-        printf("Reading file %s\n", filename.c_str());
+        if (debug == 1) {
+            printf("Reading file %s\n", filename.c_str());
+        }
         std::ifstream input_file(filename);
 
         if (!input_file.good()) return;

@@ -14,6 +14,7 @@
 #include "db/version_edit.h"
 #include "port/likely.h"
 #include "learning/plr.h"
+#include "rocksdb/rocksdb_namespace.h"
 
 using std::string;
 using rocksdb::Slice;

@@ -8,6 +8,7 @@
 #include "rocksdb/sst_file_writer.h"
 #include "rocksdb/sst_file_reader.h"
 #include "rocksdb/table.h"
+#include "rocksdb/rocksdb_namespace.h"
 
 #include <chrono>
 
@@ -52,7 +53,9 @@ void read_sst(Options& options, const std::string file_name) {
     }
     iter->SeekToFirst();
     while (iter->Valid()) {
-        cout << iter->key().data() << " " << iter->value().ToString() << endl;
+        #ifdef DBG
+            cout << iter->key().data() << " " << iter->value().ToString() << endl;
+        #endif
         iter->Next();
     }
 }
@@ -63,24 +66,24 @@ void compact_files_helper(DB *db, std::vector<string>& input_files) {
 }
 
 int main() {
-    // cout << "Hi there" << endl;
-    // assert(1 == 2 && "Hello");
-    // cout << "Hi again" << endl;
     DB *db;
     Options options;
     BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
+    options.compression = kNoCompression;
     block_based_options.block_align = true;
     options.table_factory.reset(
           NewBlockBasedTableFactory(block_based_options));
     IngestExternalFileOptions ifo;
     rocksdb::Status s = DB::Open(options, dbName, &db);
-    s = db->Put(WriteOptions(), "key", "value");
+    s = db->Put(WriteOptions(), Slice("key"), Slice("value"));
     assert(s.ok());
     std::string value;
     s = db->Get(ReadOptions(), "key", &value);
     assert(s.ok());
-    printf("%s:%s\n", "key", value.c_str());
+    #ifdef DBG
+        printf("%s:%s\n", "key", value.c_str());
+    #endif
 
     SstFileWriter sst_file_writer(EnvOptions(), options);
     string file_path = "/tmp/learnedDB/file1.sst";
@@ -90,9 +93,11 @@ int main() {
     input_files.push_back("/tmp/learnedDB/file1.sst");
     input_files.push_back("/tmp/learnedDB/file2.sst");
     //compact_files_helper(db, input_files);
-    for (std::string file: input_files) {
-        printf("%s\n", file.c_str());
-    }
+    #ifdef DBG
+        for (std::string file: input_files) {
+            printf("%s\n", file.c_str());
+        }
+    #endif
     ingest_files(db, ifo, input_files);
 
     // ReadOptions read_options = ReadOptions();
@@ -110,16 +115,20 @@ int main() {
     ColumnFamilyMetaData cf_meta;
     db->GetColumnFamilyMetaData(&cf_meta);
     for (auto level : cf_meta.levels) {
-        printf("%d\n", level.level);
+        #ifdef DBG
+            printf("%d\n", level.level);
+        #endif
         for (auto file : level.files) {
-            printf("%s\n", file.name.c_str());
+            #ifdef DBG
+                printf("%s\n", file.name.c_str());
+            #endif
             read_sst(options, std::string("/tmp/learnedDB/").append(file.name));
         }
     }
 
     ReadOptions read_options = ReadOptions();
     read_options.learned_get = true;
-    s = db->Get(read_options, rocksdb::Slice(std::to_string(99)), &value);
+    s = db->Get(read_options, rocksdb::Slice(std::to_string(217)), &value);
     printf("%s\n", value.c_str());
     return 0;
 }

@@ -62,14 +62,26 @@ int counter = 0;
 Segment
 GreedyPLR::process(const struct point& pt) {
     this->last_pt = pt;
+    if (debug == 1) {
+        std::cout << "||||| " << pt.key.ToString() << " ||||||||" << std::endl;
+    }
     if (this->state.compare("need2") == 0) {
         this->s0 = pt;
         this->state = "need1";
+        if (debug == 1) {
+            std::cout << "process 1\n";
+        }
     } else if (this->state.compare("need1") == 0) {
         this->s1 = pt;
         setup();
         this->state = "ready";
+        if (debug == 1) {
+            std::cout << "process 2\n";
+        }
     } else if (this->state.compare("ready") == 0) {
+        if (debug == 1) {
+            std::cout << "process 3\n";
+        }
         return process__(pt, this->last_pt);
     } else {
         // impossible
@@ -109,6 +121,10 @@ GreedyPLR::process__(struct point pt, struct point last_pt_) {
         this->s0 = pt;
         this->state = "need1";
         return prev_segment;
+    }
+
+    if (debug == 1) {
+        std::cout << pt.key.ToString() << "\n";
     }
 
     struct point s_upper = get_upper_bound(pt, this->gamma);
@@ -224,7 +240,9 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
 
     for (size_t i = 0; i < size; ++i) {
         point p = get_unshared_point(keys[i].first, keys[i].second, minn_shared[i]);
-        p.ToString();
+        if (debug == 1) {
+            p.ToString();
+        }
         Segment seg = plr.process(p);
         if (seg.start_key != "" ||
             seg.shared != 0 ||
@@ -234,6 +252,11 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
         }
     }
 
+    // std::cout << "Segments formed are" << std::endl;
+    // for (auto seg: segments) {
+    //     std::cout << seg.ToString() << std::endl;
+    // }
+
     Segment last = plr.finish();
     if (last.start_key != "" ||
         last.shared != 0 ||
@@ -241,11 +264,12 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
         last.b != 0) {
         this->segments.push_back(last);
     }
-
-    // std::cout << "Segments formed are" << std::endl;
-    // for (auto seg: segments) {
-    //     std::cout << seg.ToString() << std::endl;
-    // }
+    if (debug == 1) {
+        std::cout << "Segments formed are" << std::endl;
+        for (auto seg: segments) {
+            std::cout << seg.ToString() << std::endl;
+        }
+    }
 
     return this->segments;
 }

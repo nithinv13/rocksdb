@@ -2,6 +2,7 @@
 #include <vector>
 #include <deque>
 #include "rocksdb/slice.h"
+#include "rocksdb/rocksdb_namespace.h"
 
 using namespace ROCKSDB_NAMESPACE;
 

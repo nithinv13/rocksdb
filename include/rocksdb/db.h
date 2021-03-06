@@ -25,6 +25,7 @@
 #include "rocksdb/transaction_log.h"
 #include "rocksdb/types.h"
 #include "rocksdb/version.h"
+#include "rocksdb/rocksdb_namespace.h"
 
 #ifdef _WIN32
 // Windows API macro interference
@@ -323,6 +324,9 @@ class DB {
                      const Slice& value) = 0;
   virtual Status Put(const WriteOptions& options, const Slice& key,
                      const Slice& value) {
+    if (debug == 1) {
+      printf("Inside Put 1\n");
+    }
     return Put(options, DefaultColumnFamily(), key, value);
   }
 
@@ -1151,7 +1155,9 @@ class DB {
       std::vector<std::string>* const output_file_names = nullptr,
       CompactionJobInfo* compaction_job_info = nullptr) {
     
-    printf("%s\n", "In compact files in db.h");
+    if (debug == 1) {
+      printf("%s\n", "In compact files in db.h");
+    }
     return CompactFiles(compact_options, DefaultColumnFamily(),
                         input_file_names, output_level, output_path_id,
                         output_file_names, compaction_job_info);

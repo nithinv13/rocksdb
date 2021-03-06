@@ -78,6 +78,7 @@ class StackableDB : public DB {
   virtual Status Put(const WriteOptions& options,
                      ColumnFamilyHandle* column_family, const Slice& key,
                      const Slice& val) override {
+    printf("Inside Put 2\n");
     return db_->Put(options, column_family, key, val);
   }
 

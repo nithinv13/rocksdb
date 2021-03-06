@@ -1412,6 +1412,8 @@ Status DBImpl::WriteLevel0TableForRecovery(int job_id, ColumnFamilyData* cfd,
 }
 
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
+  // printf("Inside Open\n");
+
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
@@ -1436,6 +1438,7 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
     }
     delete handles[0];
   }
+  // printf("%d\n", s.ok());
   return s;
 }
 

@@ -16,6 +16,7 @@
 
 #include "db/version_edit.h"
 #include "rocksdb/flush_block_policy.h"
+#include "rocksdb/rocksdb_namespace.h"
 #include "rocksdb/listener.h"
 #include "rocksdb/options.h"
 #include "rocksdb/status.h"

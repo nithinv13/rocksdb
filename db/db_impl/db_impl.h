@@ -62,6 +62,7 @@
 #include "util/repeatable_thread.h"
 #include "util/stop_watch.h"
 #include "util/thread_local.h"
+#include "rocksdb/rocksdb_namespace.h"
 
 namespace ROCKSDB_NAMESPACE {
 
