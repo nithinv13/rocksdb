@@ -48,7 +48,6 @@ void read_sst(Options& options, const std::string file_name) {
     std::unique_ptr<Iterator> iter;
     {
         ReadOptions ropts;
-        ropts.learned_get = true;
         iter.reset(reader.NewIterator(ropts));
     }
     iter->SeekToFirst();
@@ -96,8 +95,10 @@ int main() {
     }
     ingest_files(db, ifo, input_files);
 
-    s = db->Get(ReadOptions(), rocksdb::Slice(std::to_string(2)), &value);
-    printf("%s\n", value.c_str());
+    // ReadOptions read_options = ReadOptions();
+    // read_options.learned_get = true;
+    // s = db->Get(read_options, rocksdb::Slice(std::to_string(102)), &value);
+    // printf("%s\n", value.c_str());
     // read_sst(options, std::string("/tmp/learnedDB/file1.sst"));
     // read_sst(options, std::string("/tmp/learnedDB/file2.sst"));
     input_files.clear();
@@ -116,5 +117,9 @@ int main() {
         }
     }
 
+    ReadOptions read_options = ReadOptions();
+    read_options.learned_get = true;
+    s = db->Get(read_options, rocksdb::Slice(std::to_string(99)), &value);
+    printf("%s\n", value.c_str());
     return 0;
 }

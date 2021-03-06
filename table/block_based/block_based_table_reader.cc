@@ -3583,7 +3583,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     adgMod::LearnedIndexData lid;
     std::string file_name = std::to_string(file_meta.fd.packed_number_and_path_id).append(".txt");
     std::string file_path("/tmp/learnedDB/");
-    file_name.append(file_name);
+    file_path.append(file_name);
     lid.ReadModel(file_path);
     auto bounds = lid.GetPosition(key);
     uint64_t lower = bounds.first;

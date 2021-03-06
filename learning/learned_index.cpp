@@ -99,6 +99,7 @@ namespace adgMod {
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
+        printf("Reading file %s\n", filename.c_str());
         std::ifstream input_file(filename);
 
         if (!input_file.good()) return;
