@@ -18,6 +18,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <iostream>
 
 #include "db/dbformat.h"
 #include "index_builder.h"
@@ -1796,13 +1797,6 @@ Status BlockBasedTableBuilder::Finish() {
 
   adgMod::LearnedIndexData LID;
 
-  if (debug == 1) {
-    printf("\n ======= Sending key offsets ============\n");
-    for (size_t i = 0; i < r->key_offsets.size(); i++) {
-      printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
-    }
-    printf("\n");
-  }
   auto segs = LID.Learn(r->key_offsets);
   std::string file_name = r->file->file_name();
   file_name = file_name.substr(file_name.rfind("/") + 1);
@@ -1811,6 +1805,19 @@ Status BlockBasedTableBuilder::Finish() {
   std::string file_path("/tmp/learnedDB/");
   file_path.append(file_name).append(".txt");
   LID.WriteModel(file_path);
+
+  if (debug == 1) {
+    printf("\n ======= Sending key offsets ============\n");
+    file_path = "/tmp/learnedDB/";
+    file_path = file_path.append(file_name).append(".offsets");
+    std::ofstream output_file(file_path);
+    output_file.precision(15);
+    for (size_t i = 0; i < r->key_offsets.size(); i++) {
+      // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+      output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
+    }
+    printf("\n");
+  }
 
   return ret_status;
 }

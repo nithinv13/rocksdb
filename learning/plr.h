@@ -11,13 +11,13 @@ typedef uint64_t key_type;
 // Code modified from https://github.com/RyanMarcus/plr
 
 struct point {
-    Slice key;
+    std::string key;
     uint32_t shared;
     long double x;
     long double y;
 
     point() = default;
-    point(Slice key_, uint32_t shared_, long double x_, long double y_) {
+    point(std::string key_, uint32_t shared_, long double x_, long double y_) {
         key = key_;
         shared = shared_;
         x = x_;
@@ -25,7 +25,7 @@ struct point {
     }
 
     void ToString() {
-        printf("key:%s, shared:%ud, x:%Lf, y:%Lf", key.data(), shared, x, y);
+        printf("key:%s, shared:%ud, x:%Lf, y:%Lf", key.c_str(), shared, x, y);
     }
 };
 
@@ -36,15 +36,15 @@ struct line {
 
 class Segment {
 public:
-    Segment(Slice _start_key, uint32_t _shared, double _k, double _b) : start_key(_start_key), shared(_shared), k(_k), b(_b) {}
-    Slice start_key;
+    Segment(std::string _start_key, uint32_t _shared, double _k, double _b) : start_key(_start_key), shared(_shared), k(_k), b(_b) {}
+    std::string start_key;
     uint32_t shared;
     double k;
     double b;
 
     std::string ToString() {
         std::string result;
-        result.append("\nStart key:").append(start_key.ToString());
+        result.append("\nStart key:").append(start_key.c_str());
         result.append("\nShared:").append(std::to_string(shared));
         result.append("\nk:").append(std::to_string(k));
         result.append("\nb:").append(std::to_string(b));

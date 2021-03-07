@@ -2327,8 +2327,12 @@ Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
         rep_->internal_comparator.user_comparator()->timestamp_size();
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
+    int i = 0;
     for (iiter->Seek(key); iiter->Valid() && !done; iiter->Next()) {
       IndexValue v = iiter->value();
+
+      i = i+1;
+      printf("Iter:%d, offset:%llu, size%llu\n", i, v.handle.offset(), v.handle.size());
 
       bool not_exist_in_filter =
           filter != nullptr && filter->IsBlockBased() == true &&
@@ -3600,10 +3604,19 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
 
-    std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, rep_->table_options.block_size), 
-                              BlockHandle(offset_upper, rep_->table_options.block_size)};
+    if (debug == 1) {
+      printf("Offset lower : %llu, Offset upper : %llu\n", offset_lower, offset_upper);
+      printf("Block size %llu", static_cast<uint64_t>(rep_->table_options.block_size));
+    }
+
+    // std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, static_cast<uint64_t>(rep_->table_options.block_size) - 100), 
+    //                           BlockHandle(offset_upper, static_cast<uint64_t>(rep_->table_options.block_size) - 100)};
+
+    std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, (uint64_t)4065), 
+                              BlockHandle(offset_upper, (uint64_t)4065)};
 
     if (offset_lower == offset_upper) {
+      printf("Removing on of the block handles\n");
       block_handles.pop_back();
     }
 

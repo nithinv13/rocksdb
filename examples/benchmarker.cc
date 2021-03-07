@@ -27,7 +27,7 @@ uint64_t ExtractInteger(const char* pos, size_t size) {
     char* temp = new char[size + 1];
     memcpy(temp, pos, size);
     temp[size] = '\0';
-    uint64_t result = (uint64_t) atol(temp);
+    uint64_t result = (uint64_t) atoll(temp);
     delete[] temp;
     return result;
 }
@@ -48,24 +48,25 @@ public:
 };
 
 
-void write_seq(DB* db, uint64_t num_entries) {
+void write_seq(DB* db, uint64_t num_entries, int key_size) {
     WriteOptions write_options;
     rocksdb::Status s;
     for (uint64_t i = 0; i < num_entries; i++) {
         if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " writes" << endl;
         }
-        Slice key = Slice(std::to_string(i));
-        Slice value = Slice(std::to_string(i));
-        s = db->Put(write_options, key, value);
+        std::string key = std::to_string(i);
+        string result = string(key_size - key.length(), '0') + key;
+        // return std::move(result);
+        s = db->Put(write_options, Slice(result), Slice(result));
         if (!s.ok()) { 
-            printf("Error in writing key %s", key.ToString().c_str());
+            printf("Error in writing key %s", key.c_str());
             break;
         }
     }
 }
 
-void read_seq(DB* db, uint64_t num_entries, bool use_learning) {
+void read_seq(DB* db, uint64_t num_entries, bool use_learning, int key_size) {
     ReadOptions read_options;
     if (use_learning) {
         read_options.learned_get = true;
@@ -74,15 +75,17 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning) {
     uint64_t operation_count = 0;
     uint64_t total_time;
     std::string value;
-    for (uint64_t i = 2; i < num_entries; i++) {
+    for (uint64_t i = 2; i < 10; i++) {
         if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " reades" << endl;
         }
+        std::string key = std::to_string(i);
+        string result = string(key_size - key.length(), '0') + key;
         auto start = high_resolution_clock::now();
-        s = db->Get(read_options, Slice(std::to_string(i)), &value);
+        s = db->Get(read_options, Slice(result), &value);
         auto stop = high_resolution_clock::now();
-        cout << value << " " << std::to_string(i) << endl;
-        assert(value == std::to_string(i));
+        cout << value << " " << result << endl;
+        assert(value == result);
         uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
         total_time += duration;
         operation_count += 1;
@@ -95,7 +98,7 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning) {
 
 bool endsWith (std::string const &fullstring, std::string const &ending) {
     if (fullstring.length() >= ending.length()) {
-        return fullstring.compare(fullstring.length() - ending.length(), ending.length(), ending);
+        return fullstring.compare(fullstring.length() - ending.length(), ending.length(), ending) == 0;
     } else {
         return false;
     }
@@ -110,9 +113,11 @@ void measure_sizes() {
         while ((ent = readdir (dir)) != NULL) {
             printf ("%s\n", ent->d_name);
             std::string file_name = ent->d_name;
+            std::string file_path = "/tmp/learnedDB/";
+            file_path = file_path.append(file_name);
             if (endsWith(file_name, ".sst")) {
-                cout << file_name << " " << endl;
-                assert(reader.Open(file_name).ok());
+                cout << file_path << " " << endl;
+                assert(reader.Open(file_path).ok());
                 std::shared_ptr<const rocksdb::TableProperties> p = reader.GetTableProperties();
                 cout << file_name << " " << p->index_size << " " << p->data_size << " " << p->num_data_blocks << endl;
 
@@ -143,8 +148,8 @@ int main() {
     Options options;
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
-    NumericalComparator numerical_comparator;
-    options.comparator = &numerical_comparator;
+    // NumericalComparator numerical_comparator;
+    // options.comparator = &numerical_comparator;
     BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
     options.compression = kNoCompression;
@@ -156,8 +161,8 @@ int main() {
     IngestExternalFileOptions ifo;
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    write_seq(db, 500000);
-    read_seq(db, 500000, true);
+    write_seq(db, 200000, 8);
+    read_seq(db, 200000, true, 8);
     measure_sizes();
 
     return 0;

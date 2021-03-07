@@ -62,9 +62,9 @@ int counter = 0;
 Segment
 GreedyPLR::process(const struct point& pt) {
     this->last_pt = pt;
-    if (debug == 1) {
-        std::cout << "||||| " << pt.key.ToString() << " ||||||||" << std::endl;
-    }
+    // if (debug == 1) {
+    //     std::cout << "||||| " << pt.key << " ||||||||" << std::endl;
+    // }
     if (this->state.compare("need2") == 0) {
         this->s0 = pt;
         this->state = "need1";
@@ -75,13 +75,13 @@ GreedyPLR::process(const struct point& pt) {
         this->s1 = pt;
         setup();
         this->state = "ready";
-        if (debug == 1) {
-            std::cout << "process 2\n";
-        }
+        // if (debug == 1) {
+        //     std::cout << "process 2\n";
+        // }
     } else if (this->state.compare("ready") == 0) {
-        if (debug == 1) {
-            std::cout << "process 3\n";
-        }
+        // if (debug == 1) {
+        //     std::cout << "process 3\n";
+        // }
         return process__(pt, this->last_pt);
     } else {
         // impossible
@@ -103,7 +103,7 @@ GreedyPLR::setup() {
 Segment
 GreedyPLR::current_segment() {
     // uint64_t segment_start = this->s0.x;
-    Slice segment_start = this->s0.key;
+    std::string segment_start = this->s0.key;
     // uint32_t shared = this->s0.shared;
     uint32_t shared = this->s1.shared;
     double avg_slope = (this->rho_lower.a + this->rho_upper.a) / 2.0;
@@ -114,8 +114,8 @@ GreedyPLR::current_segment() {
 
 Segment
 GreedyPLR::process__(struct point pt, struct point last_pt_) {
-    std::string last_string = last_pt_.key.ToString().substr(0, last_pt_.shared);
-    std::string current_string = pt.key.ToString().substr(0, pt.shared);
+    std::string last_string = last_pt_.key.substr(0, last_pt_.shared);
+    std::string current_string = pt.key.substr(0, pt.shared);
     if (!(is_above(pt, this->rho_lower) && is_below(pt, this->rho_upper)) || (last_string.compare(current_string) != 0)) {
         Segment prev_segment = current_segment();
         this->s0 = pt;
@@ -123,9 +123,9 @@ GreedyPLR::process__(struct point pt, struct point last_pt_) {
         return prev_segment;
     }
 
-    if (debug == 1) {
-        std::cout << pt.key.ToString() << "\n";
-    }
+    // if (debug == 1) {
+    //     std::cout << pt.key << "\n";
+    // }
 
     struct point s_upper = get_upper_bound(pt, this->gamma);
     struct point s_lower = get_lower_bound(pt, this->gamma);
@@ -200,6 +200,10 @@ std::vector<uint32_t> get_min_shared(std::vector<std::pair<std::string, key_type
             // std::cout << i << " " << minn_shared[i] << std::endl;
         }
     }
+
+    for (int i = 0; i < size; i++) {
+        minn_shared[i] = 0;
+    }
     // std::cout << "PLR min_shared\n";
     // for (auto val : minn_shared) {
     //     std::cout << val << std::endl;
@@ -221,7 +225,7 @@ point get_unshared_point(std::string& key, uint64_t offset, uint32_t minn_shared
         // else
         x = (long double)stoll(x_str);
     }
-    return point(Slice(key), minn_shared, x, offset);
+    return point(key, minn_shared, x, offset);
 }
 
 std::vector<Segment>
@@ -240,9 +244,9 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
 
     for (size_t i = 0; i < size; ++i) {
         point p = get_unshared_point(keys[i].first, keys[i].second, minn_shared[i]);
-        if (debug == 1) {
-            p.ToString();
-        }
+        // if (debug == 1) {
+        //     p.ToString();
+        // }
         Segment seg = plr.process(p);
         if (seg.start_key != "" ||
             seg.shared != 0 ||
@@ -264,12 +268,12 @@ PLR::train(std::vector<std::pair<std::string, key_type> >& keys, bool file_level
         last.b != 0) {
         this->segments.push_back(last);
     }
-    if (debug == 1) {
-        std::cout << "Segments formed are" << std::endl;
-        for (auto seg: segments) {
-            std::cout << seg.ToString() << std::endl;
-        }
-    }
+    // if (debug == 1) {
+    //     std::cout << "Segments formed are" << std::endl;
+    //     for (auto seg: segments) {
+    //         std::cout << seg.ToString() << std::endl;
+    //     }
+    // }
 
     return this->segments;
 }

@@ -15,14 +15,14 @@ namespace adgMod {
 
     int compare(std::string s1, std::string s2) {
         for (uint64_t i = 0; ; i++) {
-            if (debug == 1) {
-                std::cout << s1[i] << "-" << s2[i] << "|\n";
-            }
-            if (i == s1.size()-8 && i == s2.size()-8)
+            // if (debug == 1) {
+            //     std::cout << s1[i] << "-" << s2[i] << "|\n";
+            // }
+            if (i == s1.size() && i == s2.size())
                 return 0;
-            else if (i == s1.size()-8)
+            else if (i == s1.size())
                 return -1;
-            else if (i == s2.size()-8)
+            else if (i == s2.size())
                 return 1;
             else {              
                 if (s1[i] < s2[i])
@@ -52,7 +52,7 @@ namespace adgMod {
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
         while (left != right - 1) {
             uint32_t mid = (right + left) / 2;
-            if (compare(tgt, segments[mid].start_key.ToString()) < 0) right = mid;
+            if (compare(tgt, segments[mid].start_key) < 0) right = mid;
             else left = mid;
         }
 
@@ -91,7 +91,7 @@ namespace adgMod {
         // }
         
         // fill in some bounds for the model
-        Slice temp = keys_with_offsets.back().first;
+        std::string temp = keys_with_offsets.back().first;
         min_key = keys_with_offsets.front().first;
         max_key = keys_with_offsets.back().first;
         size = keys_with_offsets.size();
@@ -131,16 +131,18 @@ namespace adgMod {
             printf("Reading file %s\n", filename.c_str());
         }
         std::ifstream input_file(filename);
+        string start_key_data;
 
         if (!input_file.good()) return;
         while (true) {
-            string start_key_data;
             uint32_t shared;
             double k, b;
             input_file >> start_key_data;
+            // std::string result = std::move(start_key_data);
             if (start_key_data == "StartAcc") break;
             input_file >> shared >> k >> b;
-            segments.emplace_back(Slice(start_key_data), shared, k, b);
+            Segment seg = Segment(start_key_data, shared, k, b);
+            segments.push_back(seg);
         }
         // string min_key_str, max_key_str; 
         input_file >> min_key >> max_key >> size >> level;

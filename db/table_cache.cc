@@ -445,7 +445,8 @@ Status TableCache::Get(const ReadOptions& options,
         t->LearnedGet(options, k, get_context, prefix_extractor, skip_filters, file_meta);
       }
       else {
-      s = t->Get(options, k, get_context, prefix_extractor, skip_filters);
+        printf("Looking in file %llu\n", file_meta.fd.packed_number_and_path_id);
+        s = t->Get(options, k, get_context, prefix_extractor, skip_filters);
       }
       get_context->SetReplayLog(nullptr);
     } else if (options.read_tier == kBlockCacheTier && s.IsIncomplete()) {
