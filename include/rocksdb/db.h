@@ -324,9 +324,6 @@ class DB {
                      const Slice& value) = 0;
   virtual Status Put(const WriteOptions& options, const Slice& key,
                      const Slice& value) {
-    if (debug == 1) {
-      printf("Inside Put 1\n");
-    }
     return Put(options, DefaultColumnFamily(), key, value);
   }
 

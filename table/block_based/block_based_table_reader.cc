@@ -3584,8 +3584,10 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     std::string file_name = std::to_string(file_meta.fd.packed_number_and_path_id).append(".txt");
     std::string file_path("/tmp/learnedDB/");
     file_path.append(file_name);
+    printf("File path %s\n", file_path.c_str());
     lid.ReadModel(file_path);
-    auto bounds = lid.GetPosition(key);
+    size_t ts_sz = rep_->internal_comparator.user_comparator()->timestamp_size();
+    auto bounds = lid.GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz));
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
     if (debug == 1) {
@@ -3595,8 +3597,6 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     uint64_t offset_lower = (lower / rep_->table_options.block_size) * rep_->table_options.block_size;
     uint64_t offset_upper = (upper / rep_->table_options.block_size) * rep_->table_options.block_size;
 
-    size_t ts_sz =
-        rep_->internal_comparator.user_comparator()->timestamp_size();
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
 

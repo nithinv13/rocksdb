@@ -947,7 +947,11 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
     r->last_key.assign(key.data(), key.size());
     auto buffer_offset = r->data_block.Add(key, value);
     
-    auto add_key = key.ToString();
+    // auto add_key = key.ToString();
+
+    size_t ts_sz =
+            r->internal_comparator.user_comparator()->timestamp_size();
+    std::string add_key = ExtractUserKeyAndStripTimestamp(key, ts_sz).ToString();
     
     // printf("Offset = %ld, global offset = %ld, Key inserted : %s\n", (long)buffer_offset, (long)r->get_offset(), add_key.c_str());
     

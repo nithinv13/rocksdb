@@ -74,13 +74,14 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning) {
     uint64_t operation_count = 0;
     uint64_t total_time;
     std::string value;
-    for (uint64_t i = 0; i < num_entries; i++) {
+    for (uint64_t i = 2; i < num_entries; i++) {
         if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " reades" << endl;
         }
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(std::to_string(i)), &value);
         auto stop = high_resolution_clock::now();
+        cout << value << " " << std::to_string(i) << endl;
         assert(value == std::to_string(i));
         uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
         total_time += duration;
@@ -155,8 +156,8 @@ int main() {
     IngestExternalFileOptions ifo;
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    write_seq(db, 1000000);
-    read_seq(db, 1000000, true);
+    write_seq(db, 500000);
+    read_seq(db, 500000, true);
     measure_sizes();
 
     return 0;

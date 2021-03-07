@@ -7,5 +7,5 @@
 
 #ifndef ROCKSDB_NAMESPACE
 #define ROCKSDB_NAMESPACE rocksdb
-const int debug = 0;
+const int debug = 1;
 #endif
