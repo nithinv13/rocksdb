@@ -22,6 +22,9 @@ simple_example: librocksdb simple_example.cc
 hello: librocksdb_debug hello.cc
 	$(CXX) $(CXXFLAGS) -g $@.cc -o$@ ../librocksdb_debug.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
 
+benchmarker: librocksdb_debug benchmarker.cc
+	$(CXX) $(CXXFLAGS) -g $@.cc -o$@ ../librocksdb_debug.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
+
 column_families_example: librocksdb column_families_example.cc
 	$(CXX) $(CXXFLAGS) $@.cc -o$@ ../librocksdb.a -I../include -O2 -std=c++11 $(PLATFORM_LDFLAGS) $(PLATFORM_CXXFLAGS) $(EXEC_LDFLAGS)
 

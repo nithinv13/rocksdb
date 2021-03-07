@@ -50,7 +50,7 @@ namespace adgMod {
 
         int level;
 
-        explicit LearnedIndexData() : error(1024.0), learned(false), aborted(false), learning(false),
+        explicit LearnedIndexData() : error(512.0), learned(false), aborted(false), learning(false),
             filled(false), level(0) {};
         LearnedIndexData(const LearnedIndexData& other) = delete;
 

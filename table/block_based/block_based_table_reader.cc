@@ -3589,7 +3589,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
     if (debug == 1) {
-      printf("Lb : %ld, Ub : %ld\n", lower, upper);
+      printf("Lb : %llu, Ub : %llu\n", lower, upper);
     }
     if (lower > lid.MaxPosition()) return Status::NotFound("Requested key not found");
     uint64_t offset_lower = (lower / rep_->table_options.block_size) * rep_->table_options.block_size;
