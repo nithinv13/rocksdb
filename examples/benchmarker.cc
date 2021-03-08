@@ -75,7 +75,7 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning, int key_size) {
     uint64_t operation_count = 0;
     uint64_t total_time;
     std::string value;
-    for (uint64_t i = 2; i < 10; i++) {
+    for (uint64_t i = 2; i < num_entries; i++) {
         if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " reades" << endl;
         }
@@ -153,7 +153,7 @@ int main() {
     BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
     options.compression = kNoCompression;
-    block_based_options.block_align = true;
+    // block_based_options.block_align = true;
     block_based_options.block_cache =
       NewLRUCache(static_cast<size_t>(64 * 1024 * 1024));
     options.table_factory.reset(
@@ -162,8 +162,8 @@ int main() {
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     write_seq(db, 200000, 8);
-    read_seq(db, 200000, true, 8);
-    measure_sizes();
+    read_seq(db, 165, false, 8);
+    // measure_sizes();
 
     return 0;
 }

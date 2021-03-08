@@ -115,7 +115,7 @@ namespace adgMod {
         } else return false;
     }
 
-    void LearnedIndexData::WriteModel(const string &filename) {
+    void LearnedIndexData::WriteModel(const string &filename, std::vector<uint64_t> block_content_sizes) {
         if (!learned.load()) return;
 
         std::ofstream output_file(filename);
@@ -123,7 +123,11 @@ namespace adgMod {
         for (Segment& item: segments) {
             output_file << item.start_key.data() << " " << item.shared << " " << item.k << " " << item.b << "\n";
         }
-        output_file << "StartAcc" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
+        output_file << "Sizes\n";
+        for (auto sz : block_content_sizes) {
+            output_file << sz << "\n";
+        }
+        output_file << "2441139" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
@@ -139,10 +143,16 @@ namespace adgMod {
             double k, b;
             input_file >> start_key_data;
             // std::string result = std::move(start_key_data);
-            if (start_key_data == "StartAcc") break;
+            if (start_key_data == "Sizes") break;
             input_file >> shared >> k >> b;
             Segment seg = Segment(start_key_data, shared, k, b);
             segments.push_back(seg);
+        }
+        while (true) {
+            uint64_t data_block_size;
+            input_file >> data_block_size;
+            if (data_block_size == 2441139) break;
+            data_block_sizes.push_back(data_block_size);
         }
         // string min_key_str, max_key_str; 
         input_file >> min_key >> max_key >> size >> level;

@@ -48,6 +48,8 @@ namespace adgMod {
         // all keys in the file with offsets to be learned from
         std::vector<std::pair<std::string, key_type> > keys_with_offsets;
 
+        std::vector<uint64_t> data_block_sizes;
+
         int level;
 
         explicit LearnedIndexData() : error(512.0), learned(false), aborted(false), learning(false),
@@ -67,7 +69,7 @@ namespace adgMod {
         bool Learned();
 
         // writing this model to disk and load this model from disk
-        void WriteModel(const string& filename);
+        void WriteModel(const string& filename, std::vector<uint64_t> block_content_sizes);
         void ReadModel(const string& filename);
         
         // print model stats

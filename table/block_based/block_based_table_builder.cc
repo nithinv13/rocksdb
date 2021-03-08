@@ -286,6 +286,7 @@ struct BlockBasedTableBuilder::Rep {
 
   std::vector<std::pair<std::string, key_type>> key_offsets;
   std::vector<std::pair<std::string, key_type>> intra_block_offsets;
+  std::vector<uint64_t> block_content_sizes;
 
   size_t data_begin_offset = 0;
 
@@ -512,6 +513,7 @@ struct BlockBasedTableBuilder::Rep {
     }
 
     key_offsets.clear();
+    block_content_sizes.clear();
   }
 
   Rep(const Rep&) = delete;
@@ -1030,7 +1032,7 @@ void BlockBasedTableBuilder::WriteBlock(BlockBuilder* block,
   WriteBlock(block->Finish(), handle, is_data_block);
   Rep* r = rep_;
   for (size_t i = 0; i < r->intra_block_offsets.size(); i++) {
-      r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + ((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed))/(long double)r->data_block.CurrentSizeEstimate()});
+      r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + (((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed)) * r->get_offset())/(long double)r->data_block.CurrentSizeEstimate()});
   }
   block->Reset();
   r->intra_block_offsets.clear();
@@ -1058,6 +1060,7 @@ void BlockBasedTableBuilder::WriteBlock(const Slice& raw_block_contents,
   if (!ok()) {
     return;
   }
+  r->block_content_sizes.push_back(block_contents.size());
   WriteRawBlock(block_contents, type, handle, is_data_block);
   r->compressed_output.clear();
   if (is_data_block) {
@@ -1804,7 +1807,7 @@ Status BlockBasedTableBuilder::Finish() {
   file_name.erase(0, file_name.find_first_not_of("0"));
   std::string file_path("/tmp/learnedDB/");
   file_path.append(file_name).append(".txt");
-  LID.WriteModel(file_path);
+  LID.WriteModel(file_path, r->block_content_sizes);
 
   if (debug == 1) {
     printf("\n ======= Sending key offsets ============\n");

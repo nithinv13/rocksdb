@@ -399,7 +399,7 @@ struct BlockBasedTableOptions {
   bool enable_index_compression = true;
 
   // Align data blocks on lesser of page size and block size
-  bool block_align = true; // Changed by Arijit from false
+  bool block_align = false;
 
   // This enum allows trading off increased index size for improved iterator
   // seek performance in some situations, particularly when block cache is

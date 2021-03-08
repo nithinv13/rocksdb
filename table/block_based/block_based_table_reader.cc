@@ -2332,7 +2332,7 @@ Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
       IndexValue v = iiter->value();
 
       i = i+1;
-      printf("Iter:%d, offset:%llu, size%llu\n", i, v.handle.offset(), v.handle.size());
+      printf("Iter:%d, offset:%ld, size%ld\n", i, (long)v.handle.offset(), (long)v.handle.size());
 
       bool not_exist_in_filter =
           filter != nullptr && filter->IsBlockBased() == true &&
@@ -3595,25 +3595,47 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
     if (debug == 1) {
-      printf("Lb : %llu, Ub : %llu\n", lower, upper);
+      printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
     }
     if (lower > lid.MaxPosition()) return Status::NotFound("Requested key not found");
-    uint64_t offset_lower = (lower / rep_->table_options.block_size) * rep_->table_options.block_size;
-    uint64_t offset_upper = (upper / rep_->table_options.block_size) * rep_->table_options.block_size;
+    // maybe use average of data block sizes
+    uint64_t offset_ = 0;
+    uint64_t bound = rep_->file_size - lid.data_block_sizes[lid.data_block_sizes.size()-1] - lid.data_block_sizes[lid.data_block_sizes.size()-2]; 
+    uint64_t offset_lower = bound, offset_upper = bound;
+    uint64_t lower_idx = lid.data_block_sizes.size()-2, upper_idx = lid.data_block_sizes.size() - 2;
+
+    for (size_t i = 0; i < lid.data_block_sizes.size()-1; i++) {
+      offset_ += lid.data_block_sizes[i];
+      if (offset_ > lower) {
+        offset_lower = offset_ - lid.data_block_sizes[i];
+        lower_idx = i;
+        break;
+      }
+    }
+
+    offset_ = 0;
+    for (size_t i = 0; i < lid.data_block_sizes.size()-1; i++) {
+      offset_ += lid.data_block_sizes[i];
+      if (offset_ > upper) {
+        offset_upper = offset_ - lid.data_block_sizes[i];
+        upper_idx = i;
+        break;
+      }
+    }
 
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
 
     if (debug == 1) {
-      printf("Offset lower : %llu, Offset upper : %llu\n", offset_lower, offset_upper);
-      printf("Block size %llu", static_cast<uint64_t>(rep_->table_options.block_size));
+      printf("Offset lower : %ld, Offset upper : %ld\n", (long)offset_lower, (long)offset_upper);
+      printf("Block size %ld\n", (long)static_cast<uint64_t>(rep_->table_options.block_size));
     }
 
     // std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, static_cast<uint64_t>(rep_->table_options.block_size) - 100), 
     //                           BlockHandle(offset_upper, static_cast<uint64_t>(rep_->table_options.block_size) - 100)};
 
-    std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, (uint64_t)4065), 
-                              BlockHandle(offset_upper, (uint64_t)4065)};
+    std::vector<BlockHandle> block_handles({BlockHandle(offset_lower, lid.data_block_sizes[lower_idx]), 
+                              BlockHandle(offset_upper, lid.data_block_sizes[upper_idx])});
 
     if (offset_lower == offset_upper) {
       printf("Removing on of the block handles\n");
