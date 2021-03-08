@@ -1820,18 +1820,17 @@ Status BlockBasedTableBuilder::Finish() {
   file_path.append(file_name).append(".txt");
   LID.WriteModel(file_path, r->block_content_sizes);
 
-  if (debug == 1) {
-    printf("\n ======= Sending key offsets ============\n");
-    file_path = "/tmp/learnedDB/";
-    file_path = file_path.append(file_name).append(".offsets");
-    std::ofstream output_file(file_path);
-    output_file.precision(15);
-    for (size_t i = 0; i < r->key_offsets.size(); i++) {
-      // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
-      output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
-    }
-    printf("\n");
+  
+  printf("======= Sending key offsets ============\n");
+  file_path = "/tmp/learnedDB/";
+  file_path = file_path.append(file_name).append(".offsets");
+  std::ofstream output_file(file_path);
+  output_file.precision(15);
+  for (size_t i = 0; i < r->key_offsets.size(); i++) {
+    // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+    output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
   }
+  
 
   return ret_status;
 }

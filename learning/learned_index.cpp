@@ -33,6 +33,23 @@ namespace adgMod {
         }
     }
 
+    uint64_t ExtractInteger(const char* pos, size_t size) {
+        char* temp = new char[size + 1];
+        memcpy(temp, pos, size);
+        temp[size] = '\0';
+        uint64_t result = (uint64_t) atoll(temp);
+        delete[] temp;
+        return result;
+    }
+
+    int Numericcompare(const std::string a, const std::string b) {
+        uint64_t ia = ExtractInteger(a.data(), a.size());
+        uint64_t ib = ExtractInteger(b.data(), b.size());
+        if (ia < ib) return -1;
+        else if (ia == ib) return 0;
+        else return 1;
+    }
+
     std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key) const {
         assert(segments.size() > 1);
 
@@ -42,8 +59,8 @@ namespace adgMod {
             std::cout << tgt.size() << " " << max_key.size() << " " << min_key.size() << " " << std::endl;
             std::cout << compare(tgt, min_key) << " " << compare(tgt, max_key) << std::endl;
         }
-        if (compare(tgt, min_key) < 0) return std::make_pair(size, size);
-        if (compare(tgt, max_key) > 0) return std::make_pair(size, size);
+        if (Numericcompare(tgt, min_key) < 0) return std::make_pair(size, size);
+        if (Numericcompare(tgt, max_key) > 0) return std::make_pair(size, size);
         
         if (debug == 1) {
             std::cout << "Bound check done\n";
@@ -52,7 +69,7 @@ namespace adgMod {
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
         while (left != right - 1) {
             uint32_t mid = (right + left) / 2;
-            if (compare(tgt, segments[mid].start_key) < 0) right = mid;
+            if (Numericcompare(tgt, segments[mid].start_key) < 0) right = mid;
             else left = mid;
         }
 

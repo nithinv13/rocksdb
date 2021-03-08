@@ -41,6 +41,7 @@ namespace adgMod {
 
         // Learned linear segments and some other data needed
         std::vector<Segment> segments;
+        
         std::string min_key;
         std::string max_key;
         uint64_t size;

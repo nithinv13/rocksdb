@@ -2332,7 +2332,9 @@ Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
       IndexValue v = iiter->value();
 
       i = i+1;
-      printf("Iter:%d, offset:%ld, size%ld\n", i, (long)v.handle.offset(), (long)v.handle.size());
+      if (debug == 1) {
+        printf("Iter:%d, offset:%ld, size%ld\n", i, (long)v.handle.offset(), (long)v.handle.size());
+      }
 
       bool not_exist_in_filter =
           filter != nullptr && filter->IsBlockBased() == true &&
@@ -3588,7 +3590,9 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     std::string file_name = std::to_string(file_meta.fd.packed_number_and_path_id).append(".txt");
     std::string file_path("/tmp/learnedDB/");
     file_path.append(file_name);
-    printf("File path %s\n", file_path.c_str());
+    if (debug == 1) {
+      printf("File path %s\n", file_path.c_str());
+    }
     lid.ReadModel(file_path);
     size_t ts_sz = rep_->internal_comparator.user_comparator()->timestamp_size();
     auto bounds = lid.GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz));
@@ -3646,7 +3650,6 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
                               BlockHandle(offset_upper, lid.data_block_sizes[upper_idx])});
 
     if (offset_lower == offset_upper) {
-      printf("Removing on of the block handles\n");
       block_handles.pop_back();
     }
 

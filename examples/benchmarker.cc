@@ -56,8 +56,8 @@ void write_seq(DB* db, uint64_t num_entries, int key_size) {
             cout << "Completed " << std::to_string(i) << " writes" << endl;
         }
         std::string key = std::to_string(i);
-        string result = string(key_size - key.length(), '0') + key;
-        // return std::move(result);
+        // string result = string(key_size - key.length(), '0') + key;
+        std::string result = key;
         s = db->Put(write_options, Slice(result), Slice(result));
         if (!s.ok()) { 
             printf("Error in writing key %s", key.c_str());
@@ -77,10 +77,11 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning, int key_size) {
     std::string value;
     for (uint64_t i = 2; i < num_entries; i++) {
         if (i % 10000 == 0) {
-            cout << "Completed " << std::to_string(i) << " reades" << endl;
+            cout << "Completed " << std::to_string(i) << " reads" << endl;
         }
         std::string key = std::to_string(i);
-        string result = string(key_size - key.length(), '0') + key;
+        // std::string result = string(key_size - key.length(), '0') + key;
+        std::string result = key;
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(result), &value);
         auto stop = high_resolution_clock::now();
@@ -111,7 +112,7 @@ void measure_sizes() {
     struct dirent *ent;
     if ((dir = opendir ("/tmp/learnedDB")) != NULL) {
         while ((ent = readdir (dir)) != NULL) {
-            printf ("%s\n", ent->d_name);
+            // printf ("%s\n", ent->d_name);
             std::string file_name = ent->d_name;
             std::string file_path = "/tmp/learnedDB/";
             file_path = file_path.append(file_name);
@@ -124,8 +125,16 @@ void measure_sizes() {
                 std::string learned_file_name(file_name);
                 learned_file_name.erase(0, learned_file_name.find_first_not_of("0"));
                 learned_file_name = learned_file_name.append(".txt");
-                std::ifstream in(learned_file_name, std::ifstream::ate | std::ifstream::binary);
-                cout << learned_file_name << " " << in.tellg(); 
+                std::string learned_file_path = file_path.append(learned_file_name);
+                // std::ifstream in(learned_file_name, std::ifstream::ate | std::ifstream::binary);
+                // cout << learned_file_name << " " << in.tellg() << endl; 
+
+                // FILE *p_file = NULL;
+                // p_file = fopen(learned_file_name.c_str(),"rb");
+                // fseek(p_file,0,SEEK_END);
+                // int size = ftell(p_file);
+                // fclose(p_file);
+                // cout << learned_file_name << " " << size << endl;
             }
         }
         closedir (dir);
@@ -148,8 +157,8 @@ int main() {
     Options options;
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
-    // NumericalComparator numerical_comparator;
-    // options.comparator = &numerical_comparator;
+    NumericalComparator numerical_comparator;
+    options.comparator = &numerical_comparator;
     BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
     options.compression = kNoCompression;
