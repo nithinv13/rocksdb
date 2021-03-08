@@ -3597,7 +3597,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     if (debug == 1) {
       printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
     }
-    if (lower > lid.MaxPosition()) return Status::NotFound("Requested key not found");
+    if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
     // maybe use average of data block sizes
     uint64_t offset_ = 0;
     uint64_t bound = rep_->file_size - lid.data_block_sizes[lid.data_block_sizes.size()-1] - lid.data_block_sizes[lid.data_block_sizes.size()-2]; 
@@ -3608,6 +3608,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
       offset_ += lid.data_block_sizes[i];
       if (offset_ > lower) {
         offset_lower = offset_ - lid.data_block_sizes[i];
+        offset_lower += kBlockTrailerSize*i;
         lower_idx = i;
         break;
       }
@@ -3618,6 +3619,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
       offset_ += lid.data_block_sizes[i];
       if (offset_ > upper) {
         offset_upper = offset_ - lid.data_block_sizes[i];
+        offset_upper += kBlockTrailerSize*i;
         upper_idx = i;
         break;
       }

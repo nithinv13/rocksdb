@@ -162,7 +162,7 @@ int main() {
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     write_seq(db, 200000, 8);
-    read_seq(db, 400, false, 8);
+    read_seq(db, 200000, true, 8);
     // measure_sizes();
 
     return 0;

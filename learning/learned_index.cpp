@@ -62,7 +62,7 @@ namespace adgMod {
         long double result = unshared_double * segments[left].k + segments[left].b;
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
-        if (lower >= size) return std::make_pair(size, size);
+        // if (lower >= file_size) return std::make_pair(size, size);
         upper = upper < size ? upper : size - 1;
 //                printf("%s %s %s\n", string_keys[lower].c_str(), string(target_x.data(), target_x.size()).c_str(), string_keys[upper].c_str());
 //                assert(target_x >= string_keys[lower] && target_x <= string_keys[upper]);

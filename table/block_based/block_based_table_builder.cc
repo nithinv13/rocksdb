@@ -1032,7 +1032,13 @@ void BlockBasedTableBuilder::WriteBlock(BlockBuilder* block,
   WriteBlock(block->Finish(), handle, is_data_block);
   Rep* r = rep_;
   for (size_t i = 0; i < r->intra_block_offsets.size(); i++) {
-      r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + (((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed)) * r->get_offset())/(long double)r->data_block.CurrentSizeEstimate()});
+      // r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + (((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed)) * r->get_offset())/(long double)r->data_block.CurrentSizeEstimate()});
+      if (r->get_offset() == 0) {
+        r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second});  
+      }
+      else {
+        r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + r->last_offset.load(std::memory_order_relaxed)});
+      }
   }
   block->Reset();
   r->intra_block_offsets.clear();
@@ -1800,10 +1806,10 @@ Status BlockBasedTableBuilder::Finish() {
 
   adgMod::LearnedIndexData LID;
 
-  for (size_t i = 0; i < r->key_offsets.size(); i++) {
-      // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
-      r->key_offsets[i].second = r->key_offsets[i].second - 4103.0;
-  }
+  // for (size_t i = 0; i < r->key_offsets.size(); i++) {
+  //     // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+  //     r->key_offsets[i].second = r->key_offsets[i].second;
+  // }
 
   auto segs = LID.Learn(r->key_offsets);
   std::string file_name = r->file->file_name();
