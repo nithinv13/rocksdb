@@ -3605,10 +3605,13 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     uint64_t lower_idx = lid.data_block_sizes.size()-2, upper_idx = lid.data_block_sizes.size() - 2;
 
     for (size_t i = 0; i < lid.data_block_sizes.size()-1; i++) {
-      offset_ += lid.data_block_sizes[i];
+      if (i != 0) {
+        offset_ += lid.data_block_sizes[i] + kBlockTrailerSize;
+      } else {
+        offset_ += lid.data_block_sizes[i];
+      }
       if (offset_ > lower) {
         offset_lower = offset_ - lid.data_block_sizes[i];
-        offset_lower += kBlockTrailerSize*i;
         lower_idx = i;
         break;
       }
@@ -3616,10 +3619,13 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
 
     offset_ = 0;
     for (size_t i = 0; i < lid.data_block_sizes.size()-1; i++) {
-      offset_ += lid.data_block_sizes[i];
+      if (i != 0) {
+        offset_ += lid.data_block_sizes[i] + kBlockTrailerSize;
+      } else {
+        offset_ += lid.data_block_sizes[i];
+      }
       if (offset_ > upper) {
         offset_upper = offset_ - lid.data_block_sizes[i];
-        offset_upper += kBlockTrailerSize*i;
         upper_idx = i;
         break;
       }

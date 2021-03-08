@@ -63,7 +63,7 @@ namespace adgMod {
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
         // if (lower >= file_size) return std::make_pair(size, size);
-        upper = upper < size ? upper : size - 1;
+        // upper = upper < size ? upper : size - 1;
 //                printf("%s %s %s\n", string_keys[lower].c_str(), string(target_x.data(), target_x.size()).c_str(), string_keys[upper].c_str());
 //                assert(target_x >= string_keys[lower] && target_x <= string_keys[upper]);
         return std::make_pair(lower, upper);
