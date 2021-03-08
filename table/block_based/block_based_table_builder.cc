@@ -1800,6 +1800,11 @@ Status BlockBasedTableBuilder::Finish() {
 
   adgMod::LearnedIndexData LID;
 
+  for (size_t i = 0; i < r->key_offsets.size(); i++) {
+      // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+      r->key_offsets[i].second = r->key_offsets[i].second - 4103.0;
+  }
+
   auto segs = LID.Learn(r->key_offsets);
   std::string file_name = r->file->file_name();
   file_name = file_name.substr(file_name.rfind("/") + 1);
