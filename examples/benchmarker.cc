@@ -47,6 +47,21 @@ public:
     virtual void FindShortSuccessor(std::string* key) const { return; };
 };
 
+class CustomComparator : public Comparator {
+public:
+    CustomComparator() = default;
+    virtual const char* Name() const {return "adgMod:CustomComparator";}
+    virtual int Compare(const Slice& a, const Slice& b) const {
+        uint64_t ia = (uint64_t)(stoll(a.ToString().substr(0, 8)));
+        uint64_t ib = (uint64_t)(stoll(b.ToString().substr(0, 8)));
+        if (ia < ib) return -1;
+        else if (ia == ib) return 0;
+        else return 1;
+    }
+    virtual void FindShortestSeparator(std::string* start, const Slice& limit) const { return; };
+    virtual void FindShortSuccessor(std::string* key) const { return; };
+};
+
 
 void write_seq(DB* db, uint64_t num_entries, int key_size) {
     WriteOptions write_options;
@@ -56,8 +71,8 @@ void write_seq(DB* db, uint64_t num_entries, int key_size) {
             cout << "Completed " << std::to_string(i) << " writes" << endl;
         }
         std::string key = std::to_string(i);
-        // string result = string(key_size - key.length(), '0') + key;
-        std::string result = key;
+        string result = string(key_size - key.length(), '0') + key;
+        // std::string result = key;
         s = db->Put(write_options, Slice(result), Slice(result));
         if (!s.ok()) { 
             printf("Error in writing key %s", key.c_str());
@@ -80,8 +95,8 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning, int key_size) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
         }
         std::string key = std::to_string(i);
-        // std::string result = string(key_size - key.length(), '0') + key;
-        std::string result = key;
+        std::string result = string(key_size - key.length(), '0') + key;
+        // std::string result = key;
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(result), &value);
         auto stop = high_resolution_clock::now();
@@ -157,8 +172,10 @@ int main() {
     Options options;
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
-    NumericalComparator numerical_comparator;
-    options.comparator = &numerical_comparator;
+    // NumericalComparator numerical_comparator;
+    // options.comparator = &numerical_comparator;
+    CustomComparator custom_comparator;
+    options.comparator = &custom_comparator;
     BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
     options.compression = kNoCompression;
