@@ -3604,7 +3604,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
     // maybe use average of data block sizes
     uint64_t offset_ = 0;
-    uint64_t bound = rep_->file_size - lid.data_block_sizes[lid.data_block_sizes.size()-1] - lid.data_block_sizes[lid.data_block_sizes.size()-2]; 
+    uint64_t bound = rep_->file_size - lid.data_block_sizes[lid.data_block_sizes.size()-1] - lid.data_block_sizes[lid.data_block_sizes.size()-2] - kBlockTrailerSize; 
     uint64_t offset_lower = bound, offset_upper = bound;
     uint64_t lower_idx = lid.data_block_sizes.size()-2, upper_idx = lid.data_block_sizes.size() - 2;
 

@@ -70,7 +70,9 @@ void write_seq(DB* db, uint64_t num_entries, int key_size) {
         if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " writes" << endl;
         }
-        std::string key = std::to_string(i);
+        int rand = std::rand() % 1000000;
+        // std::cout << rand << std::endl;
+        std::string key = std::to_string(rand);
         string result = string(key_size - key.length(), '0') + key;
         // std::string result = key;
         s = db->Put(write_options, Slice(result), Slice(result));
@@ -95,13 +97,16 @@ void read_seq(DB* db, uint64_t num_entries, bool use_learning, int key_size) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
         }
         std::string key = std::to_string(i);
-        std::string result = string(key_size - key.length(), '0') + key;
-        // std::string result = key;
+        // std::string result = string(key_size - key.length(), '0') + key;
+        std::string result = key;
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(result), &value);
         auto stop = high_resolution_clock::now();
         cout << value << " " << result << endl;
-        assert(value == result);
+        // assert(value == result);
+        // if (value == result) {
+        //     std::cout << "found" << endl;
+        // }
         uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
         total_time += duration;
         operation_count += 1;
@@ -187,9 +192,9 @@ int main() {
     IngestExternalFileOptions ifo;
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    write_seq(db, 200000, 8);
-    read_seq(db, 200000, true, 8);
-    // measure_sizes();
+    // write_seq(db, 200000, 8);
+    // read_seq(db, 200000, true, 8);
+    measure_sizes();
 
     return 0;
 }
