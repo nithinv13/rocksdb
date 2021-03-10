@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
     BlockBasedTableOptions block_based_options;
     MetadataCacheOptions metadata_cache_options;
     // block_based_options.block_align = true;
+    // block_based_options.cache_index_and_filter_blocks = true;
     switch (index_type) {
         case 1:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearch;
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
         default:
             std::cout <<  "Option not available\n" << std::endl;
     }
-    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(64 * 1024 * 1024));
+    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(2 * 1024 * 1024));
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
@@ -59,6 +60,7 @@ int main(int argc, char **argv) {
     cout << "Block cache usage: " << cache_usage << endl;
     cout << "Block cache pinned usage: " << pinned_usage << endl;
 
+    measure_sizes();
     // measure_memory_usage();
 
     return 0;
