@@ -69,8 +69,9 @@ int main() {
     IngestExternalFileOptions ifo;
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    write(db, 200000, 8, true, true, 100000);
-    read(db, 200000, true, 8, true, true, 100000);
+    bool random_write = true;
+    auto written = write(db, 200000, 8, false, !random_write, 100000);
+    read(db, 200000, true, 8, false, false, 100000, written, random_write);
     measure_sizes();
 
     return 0;

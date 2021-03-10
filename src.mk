@@ -616,5 +616,5 @@ JNI_NATIVE_SOURCES =                                          \
   java/rocksjni/write_buffer_manager.cc
 
 LEARNING_SRCS =                                               \
-  learning/plr.cpp                                            \
   learning/learned_index.cpp                                  \
+  learning/slsr.cpp                                           \

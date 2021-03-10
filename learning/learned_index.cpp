@@ -63,15 +63,15 @@ namespace adgMod {
 
         // check if the key is within the model bounds
         std::string tgt = target_key.ToString();
-        if (debug == 1) {
-            std::cout << tgt.size() << " " << max_key.size() << " " << min_key.size() << " " << std::endl;
-            std::cout << compare(tgt, min_key) << " " << compare(tgt, max_key) << std::endl;
-        }
+        // if (debug == 1) {
+        //     std::cout << tgt.size() << " " << max_key.size() << " " << min_key.size() << " " << std::endl;
+        //     std::cout << compare(tgt, min_key) << " " << compare(tgt, max_key) << std::endl;
+        // }
         if (Customcompare(tgt, min_key) < 0) return std::make_pair(size, size);
         if (Customcompare(tgt, max_key) > 0) return std::make_pair(size, size);
         
         if (debug == 1) {
-            std::cout << "Bound check done\n";
+            std::cout << "Bound check done, error : " << error << "\n";
         }
         // binary search between segments
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
@@ -81,10 +81,15 @@ namespace adgMod {
             else left = mid;
         }
 
-        // calculate the interval according to the selected segment
-        uint32_t shared = segments[left].shared;
-        long double unshared_double = (long double)(stoll(target_key.ToString().substr(shared, shared + 8)));
-        long double result = unshared_double * segments[left].k + segments[left].b;
+        // // calculate the interval according to the selected segment
+        // uint32_t shared = segments[left].shared;
+        // long double unshared_double = (long double)(stoll(target_key.ToString().substr(shared, shared + 8)));
+        // long double result = unshared_double * segments[left].k + segments[left].b;
+
+        long double result = (long double)(stoll(target_key.ToString().substr(0, 8))) * segments[left].slope + segments[left].intercept;
+        if (debug == 1) {
+            std::cout << (long double)(stoll(target_key.ToString().substr(0, 8))) << " " << segments[left].slope << " " << segments[left].intercept << " \n";
+        }
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
         // if (lower >= file_size) return std::make_pair(size, size);
@@ -105,8 +110,10 @@ namespace adgMod {
     // Actual function doing learning
     std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input) {
         // FILL IN GAMMA (error)
-        PLR plr = PLR(error);
+        // PLR plr = PLR(error);
         
+        SimLR simLR = SimLR();
+
         // Fill string key with offsets
         keys_with_offsets = input;
 
@@ -122,10 +129,10 @@ namespace adgMod {
         size = keys_with_offsets.size();
 
         // actual training
-        std::vector<Segment> segs = plr.train(keys_with_offsets, true);
+        std::vector<Segment> segs = simLR.train(keys_with_offsets);
         if (segs.empty()) return segs;
         // fill in a dummy last segment (used in segment binary search)
-        segs.push_back((Segment) {temp, 0, 0, 0});
+        segs.push_back((Segment) {temp, 0.0, 0, 0});
         segments = std::move(segs);
 
         learned.store(true);
@@ -146,7 +153,7 @@ namespace adgMod {
         std::ofstream output_file(filename);
         output_file.precision(15);
         for (Segment& item: segments) {
-            output_file << item.start_key.data() << " " << item.shared << " " << item.k << " " << item.b << "\n";
+            output_file << item.start_key.data() << " " << item.error << " " << item.slope << " " << item.intercept << "\n";
         }
         output_file << "Sizes\n";
         for (auto sz : block_content_sizes) {
@@ -157,21 +164,28 @@ namespace adgMod {
 
     void LearnedIndexData::ReadModel(const string &filename) {
         if (debug == 1) {
-            printf("Reading file %s\n", filename.c_str());
+            printf("Reading file : %s\n", filename.c_str());
         }
         std::ifstream input_file(filename);
         string start_key_data;
+        long double err;
 
         if (!input_file.good()) return;
+        if (debug == 1)
+            printf("Start reading file\n");
         while (true) {
-            uint32_t shared;
+            // uint32_t shared;
             double k, b;
             input_file >> start_key_data;
-            // std::string result = std::move(start_key_data);
-            if (start_key_data == "Sizes") break;
-            input_file >> shared >> k >> b;
-            Segment seg = Segment(start_key_data, shared, k, b);
+            if (start_key_data.compare("Sizes") == 0) {
+                if (debug == 1) printf("All segments read\n");
+                break;
+            }
+            // input_file >> shared >> k >> b;
+            input_file >> err >> k >> b;
+            Segment seg = Segment(start_key_data, err, k, b);
             segments.push_back(seg);
+            error = std::max((double)error, (double)err);
         }
         while (true) {
             uint64_t data_block_size;
