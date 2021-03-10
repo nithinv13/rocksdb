@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     write(db, 200000, 8, true, true, 200000);
-    read(db, 200000, false, 8, true, true, 200000);
+    read(db, 2000, false, 8, true, true, 200000);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     cout << "Block cache usage: " << cache_usage << endl;
     cout << "Block cache pinned usage: " << pinned_usage << endl;
 
-    measure_memory_usage();
+    // measure_memory_usage();
 
     return 0;
 }
