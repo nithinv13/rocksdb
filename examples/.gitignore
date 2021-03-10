@@ -7,3 +7,6 @@ optimistic_transaction_example
 options_file_example
 simple_example
 transaction_example
+benchmarker
+index_comparer
+*dSYM
