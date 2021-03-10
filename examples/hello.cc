@@ -71,7 +71,7 @@ int main() {
     BlockBasedTableOptions block_based_options;
     options.create_if_missing = true;
     options.compression = kNoCompression;
-    block_based_options.block_align = true;
+    // block_based_options.block_align = true;
     options.table_factory.reset(
           NewBlockBasedTableFactory(block_based_options));
     IngestExternalFileOptions ifo;
@@ -86,52 +86,52 @@ int main() {
     }
 
     SstFileWriter sst_file_writer(EnvOptions(), options);
-    string file_path = "/tmp/learnedDB/file1.sst";
-    write_ssts(sst_file_writer, "/tmp/learnedDB/file1.sst", 100, 108);
-    write_ssts(sst_file_writer, "/tmp/learnedDB/file2.sst", 200, 218);
+    // string file_path = "/tmp/learnedDB/file1.sst";
+    write_ssts(sst_file_writer, "/tmp/learnedDB/000007.sst", 100, 108);
+    write_ssts(sst_file_writer, "/tmp/learnedDB/000008.sst", 200, 218);
     std::vector<std::string> input_files;
-    input_files.push_back("/tmp/learnedDB/file1.sst");
-    input_files.push_back("/tmp/learnedDB/file2.sst");
+    input_files.push_back("/tmp/learnedDB/000007.sst");
+    input_files.push_back("/tmp/learnedDB/000008.sst");
     //compact_files_helper(db, input_files);
     if (debug == 1) {
         for (std::string file: input_files) {
             printf("%s\n", file.c_str());
         }
     }
-    ingest_files(db, ifo, input_files);
+    // ingest_files(db, ifo, input_files);
 
-    // ReadOptions read_options = ReadOptions();
-    // read_options.learned_get = true;
-    // s = db->Get(read_options, rocksdb::Slice(std::to_string(102)), &value);
-    // printf("%s\n", value.c_str());
+    ReadOptions read_options = ReadOptions();
+    read_options.learned_get = true;
+    s = db->Get(read_options, rocksdb::Slice(std::to_string(102)), &value);
+    printf("%s\n", value.c_str());
     // read_sst(options, std::string("/tmp/learnedDB/file1.sst"));
     // read_sst(options, std::string("/tmp/learnedDB/file2.sst"));
     input_files.clear();
     input_files.insert(input_files.end(), {"/tmp/learnedDB/000007.sst", "/tmp/learnedDB/000008.sst"});
-    rocksdb::CompactionOptions c_options;
-    std::vector<string> output_files;
-    s = db->CompactFiles(c_options, input_files, 1, -1, &output_files);
-    assert(s.ok());
-    ColumnFamilyMetaData cf_meta;
-    db->GetColumnFamilyMetaData(&cf_meta);
-    for (auto level : cf_meta.levels) {
-        if (debug == 1) {
-            printf("%d\n", level.level);
-        }
-        for (auto file : level.files) {
-            if (debug == 1) {
-                printf("%s\n", file.name.c_str());
-            }
-            read_sst(options, std::string("/tmp/learnedDB/").append(file.name));
-        }
-    }
+    // rocksdb::CompactionOptions c_options;
+    // std::vector<string> output_files;
+    // s = db->CompactFiles(c_options, input_files, 1, -1, &output_files);
+    // assert(s.ok());
+    // ColumnFamilyMetaData cf_meta;
+    // db->GetColumnFamilyMetaData(&cf_meta);
+    // for (auto level : cf_meta.levels) {
+    //     if (debug == 1) {
+    //         printf("%d\n", level.level);
+    //     }
+    //     for (auto file : level.files) {
+    //         if (debug == 1) {
+    //             printf("%s\n", file.name.c_str());
+    //         }
+    //         read_sst(options, std::string("/tmp/learnedDB/").append(file.name));
+    //     }
+    // }
 
-    ReadOptions read_options = ReadOptions();
-    read_options.learned_get = true;
-    for (int i = 199; i < 219; i++) {
-        value = "null";
-        s = db->Get(read_options, rocksdb::Slice(std::to_string(i)), &value);
-        printf("VALUE : %s\n", value.c_str());
-    }
+    // ReadOptions read_options = ReadOptions();
+    // read_options.learned_get = true;
+    // for (int i = 199; i < 219; i++) {
+    //     value = "null";
+    //     s = db->Get(read_options, rocksdb::Slice(std::to_string(i)), &value);
+    //     printf("VALUE : %s\n", value.c_str());
+    // }
     return 0;
 }

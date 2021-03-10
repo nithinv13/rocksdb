@@ -60,9 +60,10 @@ public:
 };
 
 
-void write(DB* db, uint64_t num_entries = 1000000, int key_size = 8, bool pad = true, bool seq = true, int key_range = 1000000) {
+std::vector<std::string> write(DB* db, uint64_t num_entries = 1000000, int key_size = 8, bool pad = true, bool seq = true, int key_range = 1000000) {
     WriteOptions write_options;
     rocksdb::Status s;
+    std::vector<std::string> written;
     for (uint64_t i = 0; i < num_entries; i++) {
         if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " writes" << endl;
@@ -76,15 +77,19 @@ void write(DB* db, uint64_t num_entries = 1000000, int key_size = 8, bool pad = 
         std::string result;
         if (pad) result = string(key_size - key.length(), '0') + key;
         else result = key;
+        written.push_back(result);
         s = db->Put(write_options, Slice(result), Slice(result));
         if (!s.ok()) { 
             printf("Error in writing key %s", key.c_str());
             break;
         }
     }
+    return written;
 }
 
-void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = true, bool pad = true, bool seq = true, int key_range = 1000000) {
+void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = true, bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false) {
+    assert(!random_write || v.size() > 0);
+    
     ReadOptions read_options;
     if (use_learning) {
         read_options.learned_get = true;
@@ -107,16 +112,18 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
         std::string result;
         if (pad) result = string(key_size - key.length(), '0') + key;
         else result = key;
+
+        if (random_write) result = v[i];
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(result), &value);
         auto stop = high_resolution_clock::now();
-        cout << value << " " << result << endl;
+        cout << result << " " << value << endl;
         if (value == result) {
             found += 1;
         }
-        // assert(value == result);
+        assert(value == result);
         // if (value == result) {
-        //     std::cout << "found" << endl;
+            // std::cout << "found" << endl;
         // }
         uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
         total_time += duration;

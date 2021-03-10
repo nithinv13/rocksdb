@@ -13,7 +13,8 @@
 #include "rocksdb/slice.h"
 #include "db/version_edit.h"
 #include "port/likely.h"
-#include "learning/plr.h"
+// #include "learning/plr.h"
+#include "learning/slsr.h"
 #include "rocksdb/rocksdb_namespace.h"
 
 using std::string;

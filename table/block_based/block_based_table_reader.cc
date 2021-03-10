@@ -3595,6 +3595,8 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     }
     lid.ReadModel(file_path);
     size_t ts_sz = rep_->internal_comparator.user_comparator()->timestamp_size();
+    if (debug == 1)
+      printf("Get Position\n");
     auto bounds = lid.GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz));
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
@@ -3653,7 +3655,8 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
       block_handles.pop_back();
     }
 
-    for (auto block_handle: block_handles) {
+    int ctr = lower_idx-1;
+    for (uint64_t offset = offset_lower; offset <= offset_upper; offset += lid.data_block_sizes[ctr] + kBlockTrailerSize) {
 
       bool not_exist_in_filter = filter != nullptr && filter->IsBlockBased() == true &&
                               !filter->KeyMayMatch(ExtractUserKeyAndStripTimestamp(key, ts_sz),
@@ -3681,6 +3684,9 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
         TableReaderCaller::kUserGet, tracing_get_id, read_options.snapshot != nullptr};
 
       bool does_referenced_key_exist = false;
+      BlockHandle block_handle = BlockHandle(offset, lid.data_block_sizes[ctr+1]);
+      ctr++;
+
       DataBlockIter biter;
       uint64_t referenced_data_size = 0;
       NewDataBlockIterator<DataBlockIter>(
