@@ -3,6 +3,8 @@
 #include <deque>
 #include "rocksdb/slice.h"
 #include "rocksdb/rocksdb_namespace.h"
+#include <limits>
+#define inf std::numeric_limits<double>::infinity()
 
 using namespace ROCKSDB_NAMESPACE;
 
@@ -36,9 +38,10 @@ struct line {
 
 class Segment {
 public:
-    Segment(std::string _start_key, uint32_t _shared, double _k, double _b) : start_key(_start_key), shared(_shared), k(_k), b(_b) {}
+    Segment(std::string _start_key, uint32_t _shared, double _error, double _k, double _b) : start_key(_start_key), shared(_shared), error(_error), k(_k), b(_b) {}
     std::string start_key;
     uint32_t shared;
+    long double error;
     double k;
     double b;
 
@@ -46,6 +49,7 @@ public:
         std::string result;
         result.append("\nStart key:").append(start_key.c_str());
         result.append("\nShared:").append(std::to_string(shared));
+        result.append("\nError:").append(std::to_string(error));
         result.append("\nk:").append(std::to_string(k));
         result.append("\nb:").append(std::to_string(b));
         return result;
@@ -93,6 +97,23 @@ private:
 public:
     PLR(double gamma);
     std::vector<Segment> train(std::vector<std::pair<std::string, key_type> >& keys, bool file);
-//    std::vector<double> predict(std::vector<double> xx);
-//    double mae(std::vector<double> y_true, std::vector<double> y_pred);
+};
+
+class SLSR {
+    std::vector<long double> cum_x, cum_y, cum_xy, cum_x2;
+    std::vector<Segment> segments;
+    std::vector<std::vector<long double> > slope, intercept, error;
+    std::vector<long double> optimal, opt_segment;
+    long size;
+public:
+    SLSR();
+    std::vector<Segment> train(std::vector<std::pair<std::string, key_type> >& keys, long double break_off_cost);
+};
+
+class SimLR {
+    std::vector<Segment> segments;
+    long size;
+public:
+    SimLR();
+    std::vector<Segment> train(std::vector<std::pair<std::string, key_type> >& keys);
 };

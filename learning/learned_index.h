@@ -13,9 +13,9 @@
 #include "rocksdb/slice.h"
 #include "db/version_edit.h"
 #include "port/likely.h"
-// #include "learning/plr.h"
-#include "learning/slsr.h"
+#include "learning/plr.h"
 #include "rocksdb/rocksdb_namespace.h"
+#include "rocksdb/table.h"
 
 using std::string;
 using rocksdb::Slice;
@@ -56,7 +56,19 @@ namespace adgMod {
 
         explicit LearnedIndexData() : error(256.0), learned(false), aborted(false), learning(false),
             filled(false), level(0) {};
-        LearnedIndexData(const LearnedIndexData& other) = delete;
+        LearnedIndexData(const LearnedIndexData& other) = default;
+
+        LearnedIndexData& operator=(const LearnedIndexData &other) {
+            segments = other.segments;
+            min_key = other.min_key;
+            max_key = other.max_key;
+            size = other.size;
+            keys_with_offsets = other.keys_with_offsets;
+            data_block_sizes = other.data_block_sizes;
+            error = other.error;
+
+            return *this;
+        }
 
         // Inference function. Return the predicted interval.
         // If the key is in the training set, the output interval guarantees to include the key
@@ -67,7 +79,7 @@ namespace adgMod {
         double GetError() const;
         
         // Learning function and checker (check if this model is available)
-        std::vector<Segment> Learn(std::vector<std::pair<std::string, key_type> > input);
+        std::vector<Segment> Learn(std::vector<std::pair<std::string, key_type> > input, Model model, long double seg_cost);
         bool Learned();
 
         // writing this model to disk and load this model from disk

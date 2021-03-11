@@ -100,6 +100,12 @@ struct MetadataCacheOptions {
   PinningTier unpartitioned_pinning = PinningTier::kFallback;
 };
 
+enum Model {
+  kGreedyPLR = 0x0,
+  kSimpleLR = 0x1,
+  kStatPLR = 0x2
+};
+
 // For advanced user only
 struct BlockBasedTableOptions {
   static const char* kName() { return "BlockTableOptions"; };
@@ -435,6 +441,9 @@ struct BlockBasedTableOptions {
 
   IndexShorteningMode index_shortening =
       IndexShorteningMode::kShortenSeparators;
+
+  Model model;
+  long double seg_cost = -1;
 };
 
 // Table Properties that are specific to block-based table properties.

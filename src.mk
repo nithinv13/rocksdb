@@ -617,4 +617,4 @@ JNI_NATIVE_SOURCES =                                          \
 
 LEARNING_SRCS =                                               \
   learning/learned_index.cpp                                  \
-  learning/slsr.cpp                                           \
+  learning/plr.cpp

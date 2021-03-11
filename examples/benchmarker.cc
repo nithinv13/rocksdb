@@ -52,13 +52,15 @@ void measure_sizes() {
 int main() {
     DB *db;
     Options options;
-    options.write_buffer_size = 4 << 20;
+    options.write_buffer_size = 4 << 15;
     options.target_file_size_base = 4 << 20;
     // NumericalComparator numerical_comparator;
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
     options.comparator = &custom_comparator;
     BlockBasedTableOptions block_based_options;
+    block_based_options.model = kSimpleLR;
+    // block_based_options.seg_cost = 200000;
     options.create_if_missing = true;
     options.compression = kNoCompression;
     // block_based_options.block_align = true;
@@ -70,9 +72,9 @@ int main() {
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     bool random_write = true;
-    auto written = write(db, 200000, 8, false, !random_write, 100000);
-    read(db, 200000, true, 8, false, false, 100000, written, random_write);
-    measure_sizes();
+    auto written = write(db, 10000, 8, false, !random_write, 100000);
+    read(db, 10000, true, 8, false, false, 100000, written, random_write);
+    // measure_sizes();
 
     return 0;
 }

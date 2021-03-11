@@ -16,8 +16,8 @@ with open("/tmp/learnedDB/8.txt") as f:
         segments.append(line.split())
     for i in range(len(segments)):
         segments[i][0] = int(segments[i][0])
-        segments[i][2] = float(segments[i][2])
         segments[i][3] = float(segments[i][3])
+        segments[i][4] = float(segments[i][4])
     print(segments[:5])
         
 
@@ -28,9 +28,9 @@ with open("/tmp/learnedDB/8.offsets") as f:
         x.append(int(key))
         y.append(int(offset))
         print(line)
-        for i in range(len(segments)-1, -1, -1):
+        for i in range(len(segments)-2, -1, -1):
             if segments[i][0] <= int(key):
-                val = segments[i][2]*float(key) + segments[i][3]
+                val = segments[i][3]*float(key) + segments[i][4]
                 m.append(val)
                 break
 
@@ -38,9 +38,9 @@ with open("/tmp/learnedDB/8.offsets") as f:
     # z.append(y[0])
     # for i in range(1, len(y)):
     #     z.append(y[i] - y[i-1])
-    x = x[:1000]
-    y = y[:1000]
-    m = m[:1000]
+    # x = x[:1000]
+    # y = y[:1000]
+    # m = m[:1000]
     # print(x)
     # print(y)
     plt.plot(x, y, linestyle = 'dotted')
@@ -49,4 +49,4 @@ with open("/tmp/learnedDB/8.offsets") as f:
     plt.ylabel("Offset (Bytes) in the file")
     plt.ticklabel_format(style = 'plain')
     plt.subplots_adjust(bottom=.25, left=.25)
-    plt.show()
+    plt.savefig('plot.png')

@@ -117,7 +117,7 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(result), &value);
         auto stop = high_resolution_clock::now();
-        cout << result << " " << value << endl;
+        // cout << result << " " << value << endl;
         if (value == result) {
             found += 1;
         }

@@ -62,7 +62,6 @@
 #include "util/crc32c.h"
 #include "util/stop_watch.h"
 #include "util/string_util.h"
-#include "learning/learned_index.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -3587,13 +3586,25 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     PERF_COUNTER_BY_LEVEL_ADD(bloom_filter_useful, 1, rep_->level);
   } else {
     adgMod::LearnedIndexData lid;
-    std::string file_name = std::to_string(file_meta.fd.packed_number_and_path_id).append(".txt");
-    std::string file_path("/tmp/learnedDB/");
-    file_path.append(file_name);
-    if (debug == 1) {
-      printf("File path %s\n", file_path.c_str());
+    if (cached.find(file_meta.fd.packed_number_and_path_id) == cached.end()) {
+        if (debug == 1)
+          printf("******* DAAAMMN! Have to read from file **********\n");
+        std::string file_name = std::to_string(file_meta.fd.packed_number_and_path_id).append(".txt");
+        std::string file_path("/tmp/learnedDB/");
+        file_path.append(file_name);
+        if (debug == 1) {
+          printf("File path %s\n", file_path.c_str());
+        }
+        lid.ReadModel(file_path);
+        mtx.lock();
+        cached[file_meta.fd.packed_number_and_path_id] = lid;
+        mtx.unlock();
+
     }
-    lid.ReadModel(file_path);
+    else {
+      lid = cached[file_meta.fd.packed_number_and_path_id];
+    }
+    
     size_t ts_sz = rep_->internal_comparator.user_comparator()->timestamp_size();
     if (debug == 1)
       printf("Get Position\n");

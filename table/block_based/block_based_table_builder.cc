@@ -1811,7 +1811,9 @@ Status BlockBasedTableBuilder::Finish() {
   //     r->key_offsets[i].second = r->key_offsets[i].second;
   // }
 
-  auto segs = LID.Learn(r->key_offsets);
+  if (debug == 1)
+    printf("-------- Lets Learn------------\n");
+  auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->table_options.seg_cost);
   std::string file_name = r->file->file_name();
   file_name = file_name.substr(file_name.rfind("/") + 1);
   file_name = file_name.substr(0, file_name.find("."));
@@ -1821,7 +1823,8 @@ Status BlockBasedTableBuilder::Finish() {
   LID.WriteModel(file_path, r->block_content_sizes);
 
   
-  printf("======= Sending key offsets ============\n");
+  if (debug == 1)
+    printf("======= Sending key offsets ============\n");
   file_path = "/tmp/learnedDB/";
   file_path = file_path.append(file_name).append(".offsets");
   std::ofstream output_file(file_path);
@@ -1905,4 +1908,6 @@ const std::string BlockBasedTable::kFilterBlockPrefix = "filter.";
 const std::string BlockBasedTable::kFullFilterBlockPrefix = "fullfilter.";
 const std::string BlockBasedTable::kPartitionedFilterBlockPrefix =
     "partitionedfilter.";
+std::unordered_map<uint64_t, adgMod::LearnedIndexData> BlockBasedTable::cached;
+std::mutex BlockBasedTable::mtx;
 }  // namespace ROCKSDB_NAMESPACE

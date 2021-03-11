@@ -8,6 +8,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "learning/learned_index.h"
 #include "db/version_set.h"
 
@@ -86,9 +87,9 @@ namespace adgMod {
         // long double unshared_double = (long double)(stoll(target_key.ToString().substr(shared, shared + 8)));
         // long double result = unshared_double * segments[left].k + segments[left].b;
 
-        long double result = (long double)(stoll(target_key.ToString().substr(0, 8))) * segments[left].slope + segments[left].intercept;
+        long double result = (long double)(stoll(target_key.ToString().substr(0, 8))) * segments[left].k + segments[left].b;
         if (debug == 1) {
-            std::cout << (long double)(stoll(target_key.ToString().substr(0, 8))) << " " << segments[left].slope << " " << segments[left].intercept << " \n";
+            std::cout << (long double)(stoll(target_key.ToString().substr(0, 8))) << " " << segments[left].k << " " << segments[left].b << " \n";
         }
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
@@ -108,12 +109,8 @@ namespace adgMod {
     }
 
     // Actual function doing learning
-    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input) {
-        // FILL IN GAMMA (error)
-        // PLR plr = PLR(error);
+    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input, Model model, long double seg_cost) {
         
-        SimLR simLR = SimLR();
-
         // Fill string key with offsets
         keys_with_offsets = input;
 
@@ -129,10 +126,34 @@ namespace adgMod {
         size = keys_with_offsets.size();
 
         // actual training
-        std::vector<Segment> segs = simLR.train(keys_with_offsets);
+        std::vector<Segment> segs;
+        // FILL IN GAMMA (error)
+        PLR plr = PLR(error);
+        SLSR slsr = SLSR();
+        SimLR simLR = SimLR();
+
+        switch(model) {
+        case kGreedyPLR:
+            segs = plr.train(keys_with_offsets, true);
+            break;
+
+        case kStatPLR:
+            assert(seg_cost != -1);
+            segs = slsr.train(keys_with_offsets, seg_cost);
+            break;
+
+        case kSimpleLR:
+            segs = simLR.train(keys_with_offsets);
+            break;
+
+        default:
+            exit(1);
+
+        }
+        
         if (segs.empty()) return segs;
         // fill in a dummy last segment (used in segment binary search)
-        segs.push_back((Segment) {temp, 0.0, 0, 0});
+        segs.push_back((Segment) {temp, 0, 0.0, 0, 0});
         segments = std::move(segs);
 
         learned.store(true);
@@ -153,7 +174,7 @@ namespace adgMod {
         std::ofstream output_file(filename);
         output_file.precision(15);
         for (Segment& item: segments) {
-            output_file << item.start_key.data() << " " << item.error << " " << item.slope << " " << item.intercept << "\n";
+            output_file << item.start_key.data() << " " << item.shared << " " << item.error << " " << item.k << " " << item.b << "\n";
         }
         output_file << "Sizes\n";
         for (auto sz : block_content_sizes) {
@@ -174,16 +195,15 @@ namespace adgMod {
         if (debug == 1)
             printf("Start reading file\n");
         while (true) {
-            // uint32_t shared;
+            uint32_t shared;
             double k, b;
             input_file >> start_key_data;
             if (start_key_data.compare("Sizes") == 0) {
                 if (debug == 1) printf("All segments read\n");
                 break;
             }
-            // input_file >> shared >> k >> b;
-            input_file >> err >> k >> b;
-            Segment seg = Segment(start_key_data, err, k, b);
+            input_file >> shared >> err >> k >> b;
+            Segment seg = Segment(start_key_data, shared, err, k, b);
             segments.push_back(seg);
             error = std::max((double)error, (double)err);
         }

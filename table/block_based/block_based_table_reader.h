@@ -20,8 +20,11 @@
 #include "table/table_reader.h"
 #include "table/two_level_iterator.h"
 #include "rocksdb/rocksdb_namespace.h"
+#include "learning/learned_index.h"
 
 #include "trace_replay/block_cache_tracer.h"
+#include <unordered_map>
+#include <mutex>
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -69,6 +72,9 @@ class BlockBasedTable : public TableReader {
   // experiments, for auto readahead. Experiment data is in PR #3282.
   static const size_t kMaxAutoReadaheadSize;
   static const int kMinNumFileReadsToStartAutoReadahead = 2;
+
+  static std::unordered_map<uint64_t, adgMod::LearnedIndexData> cached;
+  static std::mutex mtx;
 
   // Attempt to open the table that is stored in bytes [0..file_size)
   // of "file", and read the metadata entries necessary to allow
