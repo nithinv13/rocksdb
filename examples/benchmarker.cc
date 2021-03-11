@@ -3,51 +3,82 @@
 string dbName = "/tmp/learnedDB";
 int kTotalKeys = 100;
 
-bool endsWith (std::string const &fullstring, std::string const &ending) {
-    if (fullstring.length() >= ending.length()) {
-        return fullstring.compare(fullstring.length() - ending.length(), ending.length(), ending) == 0;
-    } else {
-        return false;
-    }
-}
-
-void measure_sizes() {
-    rocksdb::Options options;
-    rocksdb::SstFileReader reader(options);
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir ("/tmp/learnedDB")) != NULL) {
-        while ((ent = readdir (dir)) != NULL) {
-            // printf ("%s\n", ent->d_name);
-            std::string file_name = ent->d_name;
-            std::string file_path = "/tmp/learnedDB/";
-            file_path = file_path.append(file_name);
-            if (endsWith(file_name, ".sst")) {
-                cout << file_path << " " << endl;
-                assert(reader.Open(file_path).ok());
-                std::shared_ptr<const rocksdb::TableProperties> p = reader.GetTableProperties();
-                cout << file_name << " " << p->num_data_blocks << " " << p->data_size << " " << p->index_size << " " << p->filter_size << endl;
-                std::string learned_file_name(file_name);
-                learned_file_name.erase(0, learned_file_name.find_first_not_of("0"));
-                learned_file_name = learned_file_name.append(".txt");
-                std::string learned_file_path = file_path.append(learned_file_name);
-                // std::ifstream in(learned_file_name, std::ifstream::ate | std::ifstream::binary);
-                // cout << learned_file_name << " " << in.tellg() << endl; 
-
-                // FILE *p_file = NULL;
-                // p_file = fopen(learned_file_name.c_str(),"rb");
-                // fseek(p_file,0,SEEK_END);
-                // int size = ftell(p_file);
-                // fclose(p_file);
-                // cout << learned_file_name << " " << size << endl;
-            }
+std::vector<std::string> write(DB* db, uint64_t num_entries = 1000000, int key_size = 8, bool pad = true, bool seq = true, int key_range = 1000000) {
+    WriteOptions write_options;
+    rocksdb::Status s;
+    std::vector<std::string> written;
+    for (uint64_t i = 0; i < num_entries; i++) {
+        if (i % 10000 == 0) {
+            cout << "Completed " << std::to_string(i) << " writes" << endl;
         }
-        closedir (dir);
-    } else {
-        perror ("");
-        return;
+        std::string key;
+        if (seq) key =  std::to_string(i);
+        else { 
+            int rand = std::rand() % key_range;
+            key = std::to_string(rand);
+        }
+        std::string result;
+        if (pad) result = string(key_size - key.length(), '0') + key;
+        else result = key;
+        written.push_back(result);
+        s = db->Put(write_options, Slice(result), Slice(result));
+        if (!s.ok()) { 
+            printf("Error in writing key %s", key.c_str());
+            break;
+        }
     }
+    return written;
 }
+
+void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = true, bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false) {
+    assert(!random_write || v.size() > 0);
+    
+    ReadOptions read_options;
+    if (use_learning) {
+        read_options.learned_get = true;
+    }
+    rocksdb::Status s;
+    uint64_t operation_count = 0;
+    uint64_t total_time;
+    std::string value;
+    uint64_t found = 0;
+    for (uint64_t i = 2; i < num_entries; i++) {
+        if (i % 10000 == 0) {
+            cout << "Completed " << std::to_string(i) << " reads" << endl;
+        }
+        std::string key;
+        if (seq) key = std::to_string(i);
+        else {
+            int rand = std::rand() % key_range;
+            key = std::to_string(rand);
+        }
+        std::string result;
+        if (pad) result = string(key_size - key.length(), '0') + key;
+        else result = key;
+
+        if (random_write) result = v[i];
+        auto start = high_resolution_clock::now();
+        s = db->Get(read_options, Slice(result), &value);
+        auto stop = high_resolution_clock::now();
+        cout << result << " " << value << endl;
+        if (value == result) {
+            found += 1;
+        }
+        assert(value == result);
+        // if (value == result) {
+            // std::cout << "found" << endl;
+        // }
+        uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
+        total_time += duration;
+        operation_count += 1;
+    }
+    cout << "Total number of read operations: " << operation_count << endl;
+    cout << "Keys found: " << found << endl;
+    cout << "Total time taken: " << total_time << endl;
+    cout << "Throughput: " << operation_count * 1000000 / total_time << endl;
+    cout << "Average latency (us/op): " << total_time / operation_count << endl;
+}
+
 
 int main() {
     DB *db;

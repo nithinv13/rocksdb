@@ -3666,7 +3666,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
       block_handles.pop_back();
     }
 
-    int ctr = lower_idx-1;
+    int ctr = (int)(lower_idx-1);
     for (uint64_t offset = offset_lower; offset <= offset_upper; offset += lid.data_block_sizes[ctr] + kBlockTrailerSize) {
 
       bool not_exist_in_filter = filter != nullptr && filter->IsBlockBased() == true &&
