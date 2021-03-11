@@ -1,16 +1,114 @@
 #include "benchmarker.h"
 
 string dbName = "/tmp/learnedDB";
+DB* db;
+BlockBasedTableOptions block_based_options;
 
-void measure_memory_usage() {
-    return;
+void write(DB* db, uint64_t num_entries = 1000000, 
+int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int key_range = 1000000) {
+    WriteOptions write_options;
+    rocksdb::Status s;
+    std::vector<std::string> written;
+    for (uint64_t i = 0; i < num_entries; i++) {
+        if (i % 10000 == 0) {
+            cout << "Completed " << std::to_string(i) << " writes" << endl;
+        }
+        std::string key, value, final_key, final_value;
+        if (seq) {
+            key =  std::to_string(i);
+            value = std::to_string(i);
+        }
+        else { 
+            int rand = std::rand() % key_range;
+            key = std::to_string(rand);
+            value = key;
+        }
+        std::string result;
+        if (pad) {
+            final_key = string(key_size - key.length(), '0') + key;
+            final_value = string(value_size - value.length(), '0') + value;
+        }
+        // written.push_back(final_key);
+        s = db->Put(write_options, Slice(final_key), Slice(final_value));
+        if (!s.ok()) { 
+            printf("Error in writing key %s", key.c_str());
+            break;
+        }
+    }
+    // return written;
+}
+
+void measure_memory_usage(DB* db, std::ofstream& output_file) {
+    std::string out;
+    db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
+    size_t cache_usage = block_based_options.block_cache->GetUsage();
+    size_t pinned_usage = block_based_options.block_cache->GetPinnedUsage();
+    output_file << out << "," << cache_usage << "," << pinned_usage << "\n";
+}
+
+void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
+ bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false) {
+    assert(!random_write || v.size() > 0);
+    std::ofstream output_file("/tmp/learnedDB/memory_usage.csv", std::ios_base::app | std::ios_base::out);
+    output_file.precision(15);
+    output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
+    ReadOptions read_options;
+    if (use_learning) {
+        read_options.learned_get = true;
+    }
+    rocksdb::Status s;
+    uint64_t operation_count = 0;
+    uint64_t total_time;
+    std::string value;
+    uint64_t found = 0;
+    for (uint64_t i = 2; i < num_entries; i++) {
+        if (i % 10000 == 0) {
+            cout << "Completed " << std::to_string(i) << " reads" << endl;
+            measure_memory_usage(db, output_file);
+        }
+        std::string key, val, final_key, final_value;
+        if (seq) {
+            key = std::to_string(i);
+            val = std::to_string(i);
+        }
+        else {
+            int rand = std::rand() % key_range;
+            key = std::to_string(rand);
+        }
+        std::string result;
+        if (pad) {
+            final_key = string(key_size - key.length(), '0') + key;
+            final_value = string(value_size - val.length(), '0') + val;
+        } 
+
+        if (random_write) result = v[i];
+        auto start = high_resolution_clock::now();
+        s = db->Get(read_options, Slice(final_key), &value);
+        auto stop = high_resolution_clock::now();
+        // cout << final_value << " " << value << endl;
+        if (value == final_value) {
+            found += 1;
+        }
+        // assert(value == result);
+        // if (value == result) {
+            // std::cout << "found" << endl;
+        // }
+        uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
+        total_time += duration;
+        operation_count += 1;
+    }
+    cout << "Total number of read operations: " << operation_count << endl;
+    cout << "Keys found: " << found << endl;
+    cout << "Total time taken: " << total_time << endl;
+    cout << "Throughput: " << operation_count * 1000000 / total_time << endl;
+    cout << "Average latency (us/op): " << total_time / operation_count << endl;
 }
 
 int main(int argc, char **argv) {
     cout << argc << endl;
     assert(argc == 2);
     int index_type = stoi(argv[1]);
-    rocksdb::DB *db;
+    // rocksdb::DB *db;
     rocksdb::Options options;
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
@@ -20,7 +118,7 @@ int main(int argc, char **argv) {
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
     options.comparator = &custom_comparator;
-    BlockBasedTableOptions block_based_options;
+    // BlockBasedTableOptions block_based_options;
     MetadataCacheOptions metadata_cache_options;
     // block_based_options.block_align = true;
     // block_based_options.cache_index_and_filter_blocks = true;
@@ -49,8 +147,8 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    write(db, 200000, 8, true, true, 200000);
-    read(db, 2000, false, 8, true, true, 200000);
+    write(db, 200000, 8, 100, true, true, 200000);
+    read(db, 2000, false, 8, 100, true, true, 200000);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);

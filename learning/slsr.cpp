@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <cstdlib>
 #define inf std::numeric_limits<double>::infinity()
 
 SLSR::SLSR() {
@@ -125,7 +126,7 @@ std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >
 	for (int i = 0; i < size; i++) {
 		long double key = stoll(keys[i].first.substr(0, 8));
 		auto pred = slope * key + intercept;
-		auto err = abs(keys[i].second - pred);
+		auto err = abs((long)(keys[i].second - pred));
 		// std::cout << err << " " ;
 		error = std::max((double)err, (double)error);
 	}
