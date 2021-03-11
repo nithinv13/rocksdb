@@ -62,7 +62,7 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     std::string value;
     uint64_t found = 0;
     for (uint64_t i = 2; i < num_entries; i++) {
-        if (i % 10000 == 0) {
+        if (i % 500 == 0) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
             measure_memory_usage(db, output_file);
         }
