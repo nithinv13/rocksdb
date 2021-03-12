@@ -112,8 +112,14 @@ int main(int argc, char **argv) {
     //  sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
     // return 0;
     cout << argc << endl;
-    assert(argc == 2);
-    int index_type = stoi(argv[1]);
+    assert(argc == 4);
+    dbName = argv[1];
+    int index_type = stoi(argv[2]);
+    int num_operations = stoi(argv[3]);
+    std::string command = "rm -rf ";
+    command = command.append(dbName).append("/*");
+    int result = system(command.c_str());
+
     // rocksdb::DB *db;
     rocksdb::Options options;
     options.write_buffer_size = 4 << 20;
@@ -166,10 +172,12 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    write(db, 200000, 8, 100, true, true, 200000);
-    db->Close();
-    DB::Open(options, dbName, &db);
-    read(db, 200000, learned_get, 8, 100, true, false, 200000);
+    int write_key_range = num_operations;
+    int read_key_range = num_operations;
+    write(db, num_operations, 8, 100, true, true, write_key_range);
+    // db->Close();
+    // DB::Open(options, dbName, &db);
+    read(db, num_operations, learned_get, 8, 100, true, false, read_key_range);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
