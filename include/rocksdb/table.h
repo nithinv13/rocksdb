@@ -407,6 +407,9 @@ struct BlockBasedTableOptions {
   // Align data blocks on lesser of page size and block size
   bool block_align = false;
 
+  // Calling learning methods and dump the learnt segments
+  bool use_learning = false;
+
   // This enum allows trading off increased index size for improved iterator
   // seek performance in some situations, particularly when block cache is
   // disabled (ReadOptions::fill_cache = false) and direct IO is

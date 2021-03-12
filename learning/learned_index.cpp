@@ -108,6 +108,14 @@ namespace adgMod {
         return error;
     }
 
+    size_t LearnedIndexData::GetApproximateSize() const {
+        if (!learned.load()) {
+            return 0;
+        } else {
+            return (sizeof(segments) + sizeof(data_block_sizes));
+        }
+    }
+
     // Actual function doing learning
     std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input, Model model, long double seg_cost) {
         

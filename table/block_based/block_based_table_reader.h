@@ -73,8 +73,8 @@ class BlockBasedTable : public TableReader {
   static const size_t kMaxAutoReadaheadSize;
   static const int kMinNumFileReadsToStartAutoReadahead = 2;
 
-  static std::unordered_map<uint64_t, adgMod::LearnedIndexData> cached;
-  static std::mutex mtx;
+  // static std::unordered_map<uint64_t, adgMod::LearnedIndexData> cached;
+  // static std::mutex mtx;
 
   // Attempt to open the table that is stored in bytes [0..file_size)
   // of "file", and read the metadata entries necessary to allow
@@ -446,6 +446,8 @@ class BlockBasedTable : public TableReader {
       const int level, size_t file_size, size_t max_file_size_for_l0_meta_pin,
       BlockCacheLookupContext* lookup_context);
 
+  void PrefetchLearnedIndexData(std::string file_name);
+
   static BlockType GetBlockTypeForMetaBlockByName(const Slice& meta_block_name);
 
   Status VerifyChecksumInMetaBlocks(InternalIteratorBase<Slice>* index_iter);
@@ -557,6 +559,7 @@ struct BlockBasedTable::Rep {
   std::unique_ptr<IndexReader> index_reader;
   std::unique_ptr<FilterBlockReader> filter;
   std::unique_ptr<UncompressionDictReader> uncompression_dict_reader;
+  adgMod::LearnedIndexData lid;
 
   enum class FilterType {
     kNoFilter,

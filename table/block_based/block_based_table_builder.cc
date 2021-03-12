@@ -1804,37 +1804,30 @@ Status BlockBasedTableBuilder::Finish() {
   Status ret_status = r->CopyStatus();
   assert(!ret_status.ok() || io_status().ok());
 
-  adgMod::LearnedIndexData LID;
-
   // for (size_t i = 0; i < r->key_offsets.size(); i++) {
   //     // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
   //     r->key_offsets[i].second = r->key_offsets[i].second;
   // }
 
-  if (debug == 1)
-    printf("-------- Lets Learn------------\n");
-  auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->table_options.seg_cost);
-  std::string file_name = r->file->file_name();
-  file_name = file_name.substr(file_name.rfind("/") + 1);
-  file_name = file_name.substr(0, file_name.find("."));
-  file_name.erase(0, file_name.find_first_not_of("0"));
-  std::string file_path("/tmp/learnedDB/");
-  file_path.append(file_name).append(".txt");
-  LID.WriteModel(file_path, r->block_content_sizes);
+  if (r->table_options.use_learning) {
+    adgMod::LearnedIndexData LID;
 
-  
-  if (debug == 1)
-    printf("======= Sending key offsets ============\n");
-  file_path = "/tmp/learnedDB/";
-  file_path = file_path.append(file_name).append(".offsets");
-  std::ofstream output_file(file_path);
-  output_file.precision(15);
-  for (size_t i = 0; i < r->key_offsets.size(); i++) {
-    // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
-    output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
+    if (debug == 1) printf("------------ Lets Learn------------\n");
+    auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->table_options.seg_cost);
+    std::string file_name = r->file->file_name();
+    file_name = file_name.substr(0, file_name.find(".")).append(".txt");
+    LID.WriteModel(file_name, r->block_content_sizes);
+
+    if (debug == 1) printf("=========== Sending key offsets ============\n");
+    file_name = file_name.substr(0, file_name.find(".")).append(".offsets");
+    std::ofstream output_file(file_name);
+    output_file.precision(15);
+    for (size_t i = 0; i < r->key_offsets.size(); i++) {
+      // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+      output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
+    }
   }
   
-
   return ret_status;
 }
 
@@ -1908,6 +1901,6 @@ const std::string BlockBasedTable::kFilterBlockPrefix = "filter.";
 const std::string BlockBasedTable::kFullFilterBlockPrefix = "fullfilter.";
 const std::string BlockBasedTable::kPartitionedFilterBlockPrefix =
     "partitionedfilter.";
-std::unordered_map<uint64_t, adgMod::LearnedIndexData> BlockBasedTable::cached;
-std::mutex BlockBasedTable::mtx;
+// std::unordered_map<uint64_t, adgMod::LearnedIndexData> BlockBasedTable::cached;
+// std::mutex BlockBasedTable::mtx;
 }  // namespace ROCKSDB_NAMESPACE

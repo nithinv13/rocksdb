@@ -55,6 +55,8 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     ReadOptions read_options;
     if (use_learning) {
         read_options.learned_get = true;
+    } else {
+        read_options.learned_get = false;
     }
     rocksdb::Status s;
     uint64_t operation_count = 0;
@@ -105,6 +107,9 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
 }
 
 int main(int argc, char **argv) {
+    cout << sizeof(1.0) << " " << sizeof(uint32_t) << " " << sizeof(long double) << " " <<
+     sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
+    return 0;
     cout << argc << endl;
     assert(argc == 2);
     int index_type = stoi(argv[1]);
@@ -122,6 +127,7 @@ int main(int argc, char **argv) {
     MetadataCacheOptions metadata_cache_options;
     // block_based_options.block_align = true;
     // block_based_options.cache_index_and_filter_blocks = true;
+    bool learned_get = false;
     switch (index_type) {
         case 1:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearch;
@@ -137,18 +143,32 @@ int main(int argc, char **argv) {
         case 3: 
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearchWithFirstKey;
             break;
-        // case 4:
-        //     block_based_options.index_type = BlockBasedTableOptions::IndexType::kLearnedSearch;
-        //     break;
+        case 4:
+            block_based_options.model = kGreedyPLR;
+            block_based_options.use_learning = true;
+            learned_get = true;
+            break;
+        case 5:
+            block_based_options.model = kSimpleLR;
+            block_based_options.use_learning = true;
+            learned_get = true;
+            break;
+        case 6:
+            block_based_options.model = kStatPLR;
+            block_based_options.use_learning = true;
+            learned_get = true;
+            break;
         default:
-            std::cout <<  "Option not available\n" << std::endl;
+            cout << "Option not available" << endl;
     }
     block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(2 * 1024 * 1024));
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     write(db, 200000, 8, 100, true, true, 200000);
-    read(db, 2000, false, 8, 100, true, true, 200000);
+    db->Close();
+    DB::Open(options, dbName, &db);
+    read(db, 10, learned_get, 8, 100, true, true, 200000);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);

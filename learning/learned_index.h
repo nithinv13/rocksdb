@@ -77,6 +77,7 @@ namespace adgMod {
         std::pair<uint64_t, uint64_t> GetPosition(const Slice& key) const;
         uint64_t MaxPosition() const;
         double GetError() const;
+        size_t GetApproximateSize() const;
         
         // Learning function and checker (check if this model is available)
         std::vector<Segment> Learn(std::vector<std::pair<std::string, key_type> > input, Model model, long double seg_cost);
