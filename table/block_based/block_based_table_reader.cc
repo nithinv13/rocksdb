@@ -1109,14 +1109,10 @@ void BlockBasedTable::PrefetchLearnedIndexData(std::string file_name) {
     return;
   }
   file_name = file_name.substr(0, file_name.find_first_of(".")).append(".txt");
-  printf("In PrefetchLearnedIndexData, Filename %s\n", file_name.c_str());
-  // adgMod::LearnedIndexData lid;
-  if (debug == 1) {
-    printf("File path %s\n", file_name.c_str());
-  }
+  // if (debug == 1) {
+  //   printf("File path %s\n", file_name.c_str());
+  // }
   (rep_->lid).ReadModel(file_name);
-  printf("Number of segments %lu with size %lu\n", rep_->lid.segments.size(), sizeof(rep_->lid.segments));
-  // (*lid).ReadModel(file_name);
 }
 
 void BlockBasedTable::SetupForCompaction() {
@@ -1154,7 +1150,6 @@ size_t BlockBasedTable::ApproximateMemoryUsage() const {
     usage += rep_->uncompression_dict_reader->ApproximateMemoryUsage();
   }
   if (rep_->table_options.use_learning) {
-    printf("Lerning enabled getting approx size\n");
     usage = (rep_->lid).GetApproximateSize();
   }
   return usage;
@@ -2348,14 +2343,14 @@ Status BlockBasedTable::Get(const ReadOptions& read_options, const Slice& key,
         rep_->internal_comparator.user_comparator()->timestamp_size();
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
-    int i = 0;
+    // int i = 0;
     for (iiter->Seek(key); iiter->Valid() && !done; iiter->Next()) {
       IndexValue v = iiter->value();
 
-      i = i+1;
-      if (debug == 1) {
-        printf("Iter:%d, offset:%ld, size%ld\n", i, (long)v.handle.offset(), (long)v.handle.size());
-      }
+      // i = i+1;
+      // if (debug == 1) {
+      //   printf("Iter:%d, offset:%ld, size%ld\n", i, (long)v.handle.offset(), (long)v.handle.size());
+      // }
 
       bool not_exist_in_filter =
           filter != nullptr && filter->IsBlockBased() == true &&
@@ -3631,14 +3626,12 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     (void) file_meta;
     
     size_t ts_sz = rep_->internal_comparator.user_comparator()->timestamp_size();
-    if (debug == 1)
-      printf("Get Position\n");
     auto bounds = (rep_->lid).GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz));
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
-    if (debug == 1) {
-      printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
-    }
+    // if (debug == 1) {
+    //   printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
+    // }
     if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
     // maybe use average of data block sizes
     uint64_t offset_ = 0;
@@ -3676,10 +3669,10 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
 
-    if (debug == 1) {
-      printf("Offset lower : %ld, Offset upper : %ld\n", (long)offset_lower, (long)offset_upper);
-      printf("Block size %ld\n", (long)static_cast<uint64_t>(rep_->table_options.block_size));
-    }
+    // if (debug == 1) {
+    //   printf("Offset lower : %ld, Offset upper : %ld\n", (long)offset_lower, (long)offset_upper);
+    //   // printf("Block size %ld\n", (long)static_cast<uint64_t>(rep_->table_options.block_size));
+    // }
 
     // std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, static_cast<uint64_t>(rep_->table_options.block_size) - 100), 
     //                           BlockHandle(offset_upper, static_cast<uint64_t>(rep_->table_options.block_size) - 100)};

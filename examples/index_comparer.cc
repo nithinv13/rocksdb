@@ -76,6 +76,7 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
         else {
             int rand = std::rand() % key_range;
             key = std::to_string(rand);
+            val = key;
         }
         std::string result;
         if (pad) {
@@ -107,9 +108,9 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
 }
 
 int main(int argc, char **argv) {
-    cout << sizeof(1.0) << " " << sizeof(uint32_t) << " " << sizeof(long double) << " " <<
-     sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
-    return 0;
+    // cout << sizeof(1.0) << " " << sizeof(uint32_t) << " " << sizeof(long double) << " " <<
+    //  sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
+    // return 0;
     cout << argc << endl;
     assert(argc == 2);
     int index_type = stoi(argv[1]);
@@ -168,7 +169,7 @@ int main(int argc, char **argv) {
     write(db, 200000, 8, 100, true, true, 200000);
     db->Close();
     DB::Open(options, dbName, &db);
-    read(db, 10, learned_get, 8, 100, true, true, 200000);
+    read(db, 200000, learned_get, 8, 100, true, false, 200000);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
@@ -178,7 +179,7 @@ int main(int argc, char **argv) {
     cout << "Block cache usage: " << cache_usage << endl;
     cout << "Block cache pinned usage: " << pinned_usage << endl;
 
-    measure_sizes();
+    // measure_sizes();
     // measure_memory_usage();
 
     return 0;

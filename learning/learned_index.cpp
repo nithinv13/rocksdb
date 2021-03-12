@@ -71,9 +71,9 @@ namespace adgMod {
         if (Customcompare(tgt, min_key) < 0) return std::make_pair(size, size);
         if (Customcompare(tgt, max_key) > 0) return std::make_pair(size, size);
         
-        if (debug == 1) {
-            std::cout << "Bound check done, error : " << error << "\n";
-        }
+        // if (debug == 1) {
+        //     std::cout << "Bound check done, error : " << error << "\n";
+        // }
         // binary search between segments
         uint32_t left = 0, right = (uint32_t) segments.size() - 1;
         while (left != right - 1) {
@@ -88,9 +88,9 @@ namespace adgMod {
         // long double result = unshared_double * segments[left].k + segments[left].b;
 
         long double result = (long double)(stoll(target_key.ToString().substr(0, 8))) * segments[left].k + segments[left].b;
-        if (debug == 1) {
-            std::cout << (long double)(stoll(target_key.ToString().substr(0, 8))) << " " << segments[left].k << " " << segments[left].b << " \n";
-        }
+        // if (debug == 1) {
+        //     std::cout << "GetPosition point" << (long double)(stoll(target_key.ToString().substr(0, 8))) << " " << segments[left].k << " " << segments[left].b << " \n";
+        // }
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
         // if (lower >= file_size) return std::make_pair(size, size);
@@ -109,10 +109,16 @@ namespace adgMod {
     }
 
     size_t LearnedIndexData::GetApproximateSize() const {
+        size_t seg_consts = 2*sizeof(double) + sizeof(long double) + sizeof(uint32_t);
         if (!learned.load()) {
             return 0;
         } else {
-            return (sizeof(segments) + sizeof(data_block_sizes));
+            size_t res = 0;
+            for (size_t i = 0; i < segments.size(); i++) {
+                res += segments[i].start_key.size() + seg_consts;
+            }
+            res += sizeof(uint32_t)*data_block_sizes.size();
+            return res;
         }
     }
 
@@ -200,14 +206,14 @@ namespace adgMod {
         long double err;
 
         if (!input_file.good()) return;
-        if (debug == 1)
-            printf("Start reading file\n");
+        // if (debug == 1)
+        //     printf("Start reading file\n");
         while (true) {
             uint32_t shared;
             double k, b;
             input_file >> start_key_data;
             if (start_key_data.compare("Sizes") == 0) {
-                if (debug == 1) printf("All segments read\n");
+                // if (debug == 1) printf("All segments read\n");
                 break;
             }
             input_file >> shared >> err >> k >> b;
@@ -216,7 +222,7 @@ namespace adgMod {
             error = std::max((double)error, (double)err);
         }
         while (true) {
-            uint64_t data_block_size;
+            uint32_t data_block_size;
             input_file >> data_block_size;
             if (data_block_size == 2441139) break;
             data_block_sizes.push_back(data_block_size);

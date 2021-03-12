@@ -445,9 +445,9 @@ Status TableCache::Get(const ReadOptions& options,
         t->LearnedGet(options, k, get_context, prefix_extractor, skip_filters, file_meta);
       }
       else {
-        if (debug == 1) {
-          printf("Looking in file %ld\n", (long)file_meta.fd.packed_number_and_path_id);
-        }
+        // if (debug == 1) {
+        //   printf("Looking in file %ld\n", (long)file_meta.fd.packed_number_and_path_id);
+        // }
         s = t->Get(options, k, get_context, prefix_extractor, skip_filters);
       }
       get_context->SetReplayLog(nullptr);
