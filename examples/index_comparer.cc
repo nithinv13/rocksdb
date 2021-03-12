@@ -49,7 +49,7 @@ void measure_memory_usage(DB* db, std::ofstream& output_file) {
 void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
  bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false) {
     assert(!random_write || v.size() > 0);
-    std::ofstream output_file("/tmp/learnedDB/memory_usage.csv", std::ios_base::app | std::ios_base::out);
+    std::ofstream output_file(dbName.append("/memory_usage.csv"), std::ios_base::app | std::ios_base::out);
     output_file.precision(15);
     output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
     ReadOptions read_options;
@@ -60,11 +60,11 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     }
     rocksdb::Status s;
     uint64_t operation_count = 0;
-    uint64_t total_time;
+    uint64_t total_time = 0;
     std::string value;
     uint64_t found = 0;
     for (uint64_t i = 2; i < num_entries; i++) {
-        if (i % 500 == 0) {
+        if (i % 10000 == 0) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
             measure_memory_usage(db, output_file);
         }
