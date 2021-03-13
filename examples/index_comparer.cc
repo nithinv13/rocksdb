@@ -1,4 +1,5 @@
 #include "benchmarker.h"
+#include "rocksdb/filter_policy.h"
 
 string dbName = "/tmp/learnedDB";
 DB* db;
@@ -10,7 +11,7 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
     rocksdb::Status s;
     std::vector<std::string> written;
     for (uint64_t i = 0; i < num_entries; i++) {
-        if (i % 10000 == 0) {
+        if (i % 50000 == 0) {
             cout << "Completed " << std::to_string(i) << " writes" << endl;
         }
         std::string key, value, final_key, final_value;
@@ -43,6 +44,8 @@ void measure_memory_usage(DB* db, std::ofstream& output_file) {
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     size_t cache_usage = block_based_options.block_cache->GetUsage();
     size_t pinned_usage = block_based_options.block_cache->GetPinnedUsage();
+    // size_t cache_usage = 0;
+    // size_t pinned_usage = 0;
     output_file << out << "," << cache_usage << "," << pinned_usage << "\n";
 }
 
@@ -64,7 +67,7 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     std::string value;
     uint64_t found = 0;
     for (uint64_t i = 2; i < num_entries; i++) {
-        if (i % 10000 == 0) {
+        if (i % 50000 == 0) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
             measure_memory_usage(db, output_file);
         }
@@ -124,6 +127,7 @@ int main(int argc, char **argv) {
     rocksdb::Options options;
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
+    options.use_direct_reads = true;
     options.create_if_missing = true;
     options.compression = kNoCompression;
     // NumericalComparator numerical_comparator;
@@ -133,19 +137,21 @@ int main(int argc, char **argv) {
     // BlockBasedTableOptions block_based_options;
     MetadataCacheOptions metadata_cache_options;
     // block_based_options.block_align = true;
-    // block_based_options.cache_index_and_filter_blocks = true;
+    block_based_options.cache_index_and_filter_blocks = true;
+    // block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
     bool learned_get = false;
     switch (index_type) {
         case 1:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearch;
             // Set the below option only if cache_index_and_filter_blocks is true
             // metadata_cache_options.top_level_index_pinning = PinningTier::kAll;
+            block_based_options.metadata_cache_options.unpartitioned_pinning = PinningTier::kAll;
             // block_based_options.pin_l0_filter_and_index_blocks_in_cache = true;
             break;
         case 2:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch;
             // Set the below option only if cache_index_and_filter_blocks is true
-            block_based_options.pin_top_level_index_and_filter = true;
+            // block_based_options.pin_top_level_index_and_filter = true;
             break;
         case 3: 
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearchWithFirstKey;

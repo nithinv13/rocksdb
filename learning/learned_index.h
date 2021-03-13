@@ -50,7 +50,7 @@ namespace adgMod {
         // all keys in the file with offsets to be learned from
         std::vector<std::pair<std::string, key_type> > keys_with_offsets;
 
-        std::vector<uint32_t> data_block_sizes;
+        std::vector<uint16_t> data_block_sizes;
 
         int level;
 

@@ -117,7 +117,7 @@ namespace adgMod {
             for (size_t i = 0; i < segments.size(); i++) {
                 res += segments[i].start_key.size() + seg_consts;
             }
-            res += sizeof(uint32_t)*data_block_sizes.size();
+            res += sizeof(uint16_t)*data_block_sizes.size();
             return res;
         }
     }
