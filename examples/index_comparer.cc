@@ -115,16 +115,18 @@ int main(int argc, char **argv) {
     //  sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
     // return 0;
     cout << argc << endl;
-    assert(argc == 4);
+    assert(argc == 5);
     dbName = argv[1];
-    int index_type = stoi(argv[2]);
-    int num_operations = stoi(argv[3]);
+    int num_operations = stoi(argv[2]);
+    int block_cache_size = stoi(argv[3]);
+    int index_type = stoi(argv[4]);
     std::string command = "rm -rf ";
     command = command.append(dbName).append("/*");
     int result = system(command.c_str());
 
     // rocksdb::DB *db;
     rocksdb::Options options;
+    options.statistics = rocksdb::CreateDBStatistics();
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
     options.use_direct_reads = true;
@@ -138,6 +140,7 @@ int main(int argc, char **argv) {
     MetadataCacheOptions metadata_cache_options;
     // block_based_options.block_align = true;
     block_based_options.cache_index_and_filter_blocks = true;
+    // block_based_options.no_block_cache = true;
     // block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
     bool learned_get = false;
     switch (index_type) {
@@ -151,11 +154,16 @@ int main(int argc, char **argv) {
         case 2:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch;
             // Set the below option only if cache_index_and_filter_blocks is true
-            // block_based_options.pin_top_level_index_and_filter = true;
+            block_based_options.pin_top_level_index_and_filter = true;
+            // block_based_options.metadata_cache_options.partition_pinning = PinningTier::kAll;
             break;
         case 3: 
-            block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearchWithFirstKey;
+            block_based_options.index_type = BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch;
+            block_based_options.metadata_cache_options.partition_pinning = PinningTier::kAll;
             break;
+        // case 4: 
+        //     block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearchWithFirstKey;
+        //     break;
         case 4:
             block_based_options.model = kGreedyPLR;
             block_based_options.use_learning = true;
@@ -174,7 +182,7 @@ int main(int argc, char **argv) {
         default:
             cout << "Option not available" << endl;
     }
-    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(2 * 1024 * 1024));
+    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
@@ -182,8 +190,12 @@ int main(int argc, char **argv) {
     int read_key_range = num_operations;
     write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
-    // DB::Open(options, dbName, &db);
-    read(db, num_operations, learned_get, 8, 100, true, false, read_key_range);
+    delete db;
+    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
+    options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
+    options.statistics = rocksdb::CreateDBStatistics();
+    DB::Open(options, dbName, &db);
+    read(db, 200000, learned_get, 8, 100, true, false, read_key_range);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
@@ -192,6 +204,8 @@ int main(int argc, char **argv) {
     cout << "Table reader memory usage: " << out << endl;
     cout << "Block cache usage: " << cache_usage << endl;
     cout << "Block cache pinned usage: " << pinned_usage << endl;
+    db->GetProperty("rocksdb.options-statistics", &out);
+    // cout << out << endl;
 
     // measure_sizes();
     // measure_memory_usage();
