@@ -96,9 +96,9 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
             found += 1;
         }
         // assert(value == result);
-        // if (value == result) {
-            // std::cout << "found" << endl;
-        // }
+        if (value != final_value) {
+            cout << final_key << " : " << final_value << " " << value << endl;
+        }
         uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
         total_time += duration;
         operation_count += 1;
@@ -138,9 +138,14 @@ int main(int argc, char **argv) {
     options.comparator = &custom_comparator;
     // BlockBasedTableOptions block_based_options;
     MetadataCacheOptions metadata_cache_options;
+
+    // // Block sizes will not be padded to 4096 bytes unless this is uncommented
     // block_based_options.block_align = true;
     block_based_options.cache_index_and_filter_blocks = true;
+    
+    // // DO NOT ENABLE THIS AND POINTER to BLOC CACHE at the same time
     // block_based_options.no_block_cache = true;
+    
     // block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
     bool learned_get = false;
     switch (index_type) {
@@ -166,6 +171,8 @@ int main(int argc, char **argv) {
         //     break;
         case 4:
             block_based_options.model = kGreedyPLR;
+            // Learn only the first keys of each block:
+            block_based_options.learn_blockwise = true;
             block_based_options.use_learning = true;
             learned_get = true;
             break;
@@ -195,7 +202,7 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
-    read(db, 200000, learned_get, 8, 100, true, false, read_key_range);
+    read(db, num_operations, learned_get, 8, 100, true, true, read_key_range);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);

@@ -285,6 +285,7 @@ struct BlockBasedTableBuilder::Rep {
   std::unique_ptr<UncompressionDict> verify_dict;
 
   std::vector<std::pair<std::string, key_type>> key_offsets;
+  std::string max_key;
   std::vector<std::pair<std::string, key_type>> intra_block_offsets;
   std::vector<uint64_t> block_content_sizes;
 
@@ -1031,15 +1032,24 @@ void BlockBasedTableBuilder::WriteBlock(BlockBuilder* block,
                                         bool is_data_block) {
   WriteBlock(block->Finish(), handle, is_data_block);
   Rep* r = rep_;
-  for (size_t i = 0; i < r->intra_block_offsets.size(); i++) {
-      // r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + (((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed)) * r->get_offset())/(long double)r->data_block.CurrentSizeEstimate()});
-      if (r->get_offset() == 0) {
-        r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second});  
-      }
-      else {
-        r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + r->last_offset.load(std::memory_order_relaxed)});
-      }
+  if (r->table_options.learn_blockwise) {
+    if (r->get_offset() == 0)
+      r->key_offsets.push_back({r->intra_block_offsets[0].first, 0});
+    else
+      r->key_offsets.push_back({r->intra_block_offsets[0].first, r->last_offset.load(std::memory_order_relaxed)});
   }
+  else {
+    for (size_t i = 0; i < r->intra_block_offsets.size(); i++) {
+        // r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + (((long double)r->get_offset() - (long double)r->last_offset.load(std::memory_order_relaxed)) * r->get_offset())/(long double)r->data_block.CurrentSizeEstimate()});
+        if (r->get_offset() == 0) {
+          r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second});  
+        }
+        else {
+          r->key_offsets.push_back({r->intra_block_offsets[i].first, r->intra_block_offsets[i].second + r->last_offset.load(std::memory_order_relaxed)});
+        }
+    }
+  }
+  r->max_key = r->intra_block_offsets.back().first;
   block->Reset();
   r->intra_block_offsets.clear();
 }
@@ -1812,13 +1822,14 @@ Status BlockBasedTableBuilder::Finish() {
   if (r->table_options.use_learning) {
     adgMod::LearnedIndexData LID;
 
-    // if (debug == 1) printf("------------ Lets Learn------------\n");
-    auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->table_options.seg_cost);
+    
+    if (debug == 1) printf("------------ Lets Learn------------\n");
+    auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->max_key, r->table_options.seg_cost);
     std::string file_name = r->file->file_name();
     file_name = file_name.substr(0, file_name.find(".")).append(".txt");
     LID.WriteModel(file_name, r->block_content_sizes);
 
-    // if (debug == 1) printf("=========== Sending key offsets ============\n");
+    if (debug == 1) printf("=========== Sending key offsets ============\n");
     file_name = file_name.substr(0, file_name.find(".")).append(".offsets");
     std::ofstream output_file(file_name);
     output_file.precision(15);

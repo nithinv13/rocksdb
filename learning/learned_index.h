@@ -80,7 +80,7 @@ namespace adgMod {
         size_t GetApproximateSize() const;
         
         // Learning function and checker (check if this model is available)
-        std::vector<Segment> Learn(std::vector<std::pair<std::string, key_type> > input, Model model, long double seg_cost);
+        std::vector<Segment> Learn(std::vector<std::pair<std::string, key_type> > input, Model model, std::string bound_key, long double seg_cost);
         bool Learned();
 
         // writing this model to disk and load this model from disk

@@ -88,9 +88,9 @@ namespace adgMod {
         // long double result = unshared_double * segments[left].k + segments[left].b;
 
         long double result = (long double)(stoll(target_key.ToString().substr(0, 8))) * segments[left].k + segments[left].b;
-        // if (debug == 1) {
-        //     std::cout << "GetPosition point" << (long double)(stoll(target_key.ToString().substr(0, 8))) << " " << segments[left].k << " " << segments[left].b << " \n";
-        // }
+        if (debug == 1) {
+            std::cout << "GetPosition point" << target_key.ToString().substr(0, 8) << " " << segments[left].k << " " << segments[left].b << " \n";
+        }
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
         // if (lower >= file_size) return std::make_pair(size, size);
@@ -123,7 +123,7 @@ namespace adgMod {
     }
 
     // Actual function doing learning
-    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input, Model model, long double seg_cost) {
+    std::vector<Segment> LearnedIndexData::Learn(std::vector<std::pair<std::string, key_type> > input, Model model, std::string bound_key, long double seg_cost) {
         
         // Fill string key with offsets
         keys_with_offsets = input;
@@ -134,9 +134,11 @@ namespace adgMod {
         // }
         
         // fill in some bounds for the model
-        std::string temp = keys_with_offsets.back().first;
+        // std::string temp = keys_with_offsets.back().first;
+        
         min_key = keys_with_offsets.front().first;
-        max_key = keys_with_offsets.back().first;
+        // max_key = keys_with_offsets.back().first;
+        max_key = bound_key;
         size = keys_with_offsets.size();
 
         // actual training
@@ -167,7 +169,7 @@ namespace adgMod {
         
         if (segs.empty()) return segs;
         // fill in a dummy last segment (used in segment binary search)
-        segs.push_back((Segment) {temp, 0, 0.0, 0, 0});
+        segs.push_back((Segment) {bound_key, 0, 0.0, 0, 0});
         segments = std::move(segs);
 
         learned.store(true);

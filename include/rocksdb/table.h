@@ -447,6 +447,7 @@ struct BlockBasedTableOptions {
 
   Model model;
   long double seg_cost = -1;
+  bool learn_blockwise = false;
 };
 
 // Table Properties that are specific to block-based table properties.
