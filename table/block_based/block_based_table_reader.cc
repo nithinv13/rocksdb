@@ -3635,8 +3635,9 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
     // maybe use average of data block sizes
     uint64_t offset_ = 0;
-    uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
-    uint64_t offset_lower = bound, offset_upper = bound;
+    // uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
+    // printf("Bound is %ld\n", (long)bound);
+    long offset_lower = -1, offset_upper = -1;
     uint64_t lower_idx = (rep_->lid).data_block_sizes.size()-2, upper_idx = (rep_->lid).data_block_sizes.size() - 2;
 
     for (size_t i = 0; i < (rep_->lid).data_block_sizes.size()-1; i++) {
@@ -3652,6 +3653,9 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
       }
     }
 
+    if (offset_lower == -1)
+      offset_lower = offset_ - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2];
+
     offset_ = 0;
     for (size_t i = 0; i < (rep_->lid).data_block_sizes.size()-1; i++) {
       if (i != 0) {
@@ -3665,6 +3669,9 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
         break;
       }
     }
+
+    if (offset_upper == -1)
+      offset_upper = offset_ - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2];
 
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
@@ -3685,7 +3692,7 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     }
 
     int ctr = (int)(lower_idx-1);
-    for (uint64_t offset = offset_lower; offset <= offset_upper; offset += (rep_->lid).data_block_sizes[ctr] + kBlockTrailerSize) {
+    for (uint64_t offset = (uint64_t)offset_lower; offset <= (uint64_t)offset_upper; offset += (rep_->lid).data_block_sizes[ctr] + kBlockTrailerSize) {
 
       bool not_exist_in_filter = filter != nullptr && filter->IsBlockBased() == true &&
                               !filter->KeyMayMatch(ExtractUserKeyAndStripTimestamp(key, ts_sz),

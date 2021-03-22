@@ -88,9 +88,22 @@ namespace adgMod {
         // long double result = unshared_double * segments[left].k + segments[left].b;
 
         long double result = (long double)(stoll(target_key.ToString().substr(0, 8))) * segments[left].k + segments[left].b;
-        if (debug == 1) {
-            std::cout << "GetPosition point" << target_key.ToString().substr(0, 8) << " " << segments[left].k << " " << segments[left].b << " \n";
+        // if (debug == 1) {
+        //     std::cout << "GetPosition point : " << target_key.ToString().substr(0, 8) << " " << segments[left].k << " " << segments[left].b << " \n";
+        // }
+        if (left != segments.size()-2) {
+            long double next_block_offset = (long double)(stoll(segments[left+1].start_key.substr(0, 8))) * segments[left+1].k + segments[left+1].b;
+            if (next_block_offset < result)
+                // result -= data_block_sizes[data_block_sizes.size()-2]; // always exists since one block of data and one props block
+                result = next_block_offset - min_proper_block_size;
         }
+        // else {
+        //     long double curr_block_offset = (long double)(stoll(segments[left].start_key.substr(0, 8))) * segments[left].k + segments[left].b;
+        //     if (curr_block_offset + data_block_sizes[data_block_sizes.size()-2] < result)
+        //         // result -= data_block_sizes[data_block_sizes.size()-2]; // always exists since one block of data and one props block
+        //         result = curr_block_offset;
+        // }
+
         uint64_t lower = result - error > 0 ? (uint64_t) std::floor(result - error) : 0;
         uint64_t upper = (uint64_t) std::ceil(result + error);
         // if (lower >= file_size) return std::make_pair(size, size);
@@ -233,7 +246,9 @@ namespace adgMod {
         input_file >> min_key >> max_key >> size >> level;
         // min_key = Slice(min_key_str);
         // max_key = Slice(max_key_str);
-
+        for (size_t i = 0; i < data_block_sizes.size()-2; i++) {
+                min_proper_block_size = std::min(min_proper_block_size, data_block_sizes[i]);
+        }
         learned.store(true);
     }
 

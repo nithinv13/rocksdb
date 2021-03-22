@@ -5,7 +5,7 @@ string dbName = "/tmp/learnedDB";
 DB* db;
 BlockBasedTableOptions block_based_options;
 
-void write(DB* db, uint64_t num_entries = 1000000, 
+std::vector<std::string> write(DB* db, uint64_t num_entries = 1000000, 
 int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int key_range = 1000000) {
     WriteOptions write_options;
     rocksdb::Status s;
@@ -29,14 +29,14 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
             final_key = string(key_size - key.length(), '0') + key;
             final_value = string(value_size - value.length(), '0') + value;
         }
-        // written.push_back(final_key);
+        written.push_back(final_key);
         s = db->Put(write_options, Slice(final_key), Slice(final_value));
         if (!s.ok()) { 
             printf("Error in writing key %s", key.c_str());
             break;
         }
     }
-    // return written;
+    return written;
 }
 
 void measure_memory_usage(DB* db, std::ofstream& output_file) {
@@ -81,13 +81,15 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
             key = std::to_string(rand);
             val = key;
         }
-        std::string result;
+        if (random_write) { 
+            key = v[i];
+            val = key;
+        }
         if (pad) {
             final_key = string(key_size - key.length(), '0') + key;
             final_value = string(value_size - val.length(), '0') + val;
         } 
 
-        if (random_write) result = v[i];
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(final_key), &value);
         auto stop = high_resolution_clock::now();
@@ -195,14 +197,14 @@ int main(int argc, char **argv) {
 
     int write_key_range = num_operations;
     int read_key_range = num_operations;
-    write(db, num_operations, 8, 100, true, true, write_key_range);
+    auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
     block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
-    read(db, num_operations, learned_get, 8, 100, true, true, read_key_range);
+    read(db, num_operations, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     std::string out;
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
