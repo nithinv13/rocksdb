@@ -122,7 +122,8 @@ namespace adgMod {
     }
 
     size_t LearnedIndexData::GetApproximateSize() const {
-        size_t seg_consts = 2*sizeof(double) + sizeof(long double) + sizeof(uint32_t);
+        // size_t seg_consts = 2*sizeof(double) + sizeof(long double) + sizeof(uint32_t);
+        size_t seg_consts = 2*sizeof(double);
         if (!learned.load()) {
             return 0;
         } else {

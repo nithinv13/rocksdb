@@ -66,7 +66,7 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     uint64_t total_time = 0;
     std::string value;
     uint64_t found = 0;
-    for (uint64_t i = 2; i < num_entries; i++) {
+    for (uint64_t i = 0; i < num_entries; i++) {
         if (i % 50000 == 0) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
             measure_memory_usage(db, output_file);
@@ -131,9 +131,10 @@ int main(int argc, char **argv) {
     options.statistics = rocksdb::CreateDBStatistics();
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
-    options.use_direct_reads = true;
+    // options.use_direct_reads = true;
     options.create_if_missing = true;
     options.compression = kNoCompression;
+    options.max_open_files = 1;
     // NumericalComparator numerical_comparator;
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
@@ -143,7 +144,7 @@ int main(int argc, char **argv) {
 
     // // Block sizes will not be padded to 4096 bytes unless this is uncommented
     // block_based_options.block_align = true;
-    block_based_options.cache_index_and_filter_blocks = true;
+    // block_based_options.cache_index_and_filter_blocks = true;
     
     // // DO NOT ENABLE THIS AND POINTER to BLOC CACHE at the same time
     // block_based_options.no_block_cache = true;
@@ -154,14 +155,14 @@ int main(int argc, char **argv) {
         case 1:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kBinarySearch;
             // Set the below option only if cache_index_and_filter_blocks is true
-            // metadata_cache_options.top_level_index_pinning = PinningTier::kAll;
-            block_based_options.metadata_cache_options.unpartitioned_pinning = PinningTier::kAll;
+            // block_based_options.metadata_cache_options.top_level_index_pinning = PinningTier::kAll;
+            // block_based_options.metadata_cache_options.unpartitioned_pinning = PinningTier::kAll;
             // block_based_options.pin_l0_filter_and_index_blocks_in_cache = true;
             break;
         case 2:
             block_based_options.index_type = BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch;
             // Set the below option only if cache_index_and_filter_blocks is true
-            block_based_options.pin_top_level_index_and_filter = true;
+            // block_based_options.pin_top_level_index_and_filter = true;
             // block_based_options.metadata_cache_options.partition_pinning = PinningTier::kAll;
             break;
         case 3: 
@@ -180,11 +181,14 @@ int main(int argc, char **argv) {
             break;
         case 5:
             block_based_options.model = kSimpleLR;
+            block_based_options.learn_blockwise = true;
             block_based_options.use_learning = true;
             learned_get = true;
             break;
         case 6:
             block_based_options.model = kStatPLR;
+            block_based_options.learn_blockwise = true;
+            block_based_options.seg_cost = 100000;
             block_based_options.use_learning = true;
             learned_get = true;
             break;
@@ -204,9 +208,17 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
-    read(db, num_operations, learned_get, 8, 100, true, false, read_key_range, written, false);
+    // read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     std::string out;
+    db->GetProperty("rocksdb.options-statistics", &out);
+    //cout << out << endl;
+
+    cout << "\nReading second time\n" << endl;
+
+    // options.statistics = rocksdb::CreateDBStatistics();
+    // read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     size_t cache_usage = block_based_options.block_cache->GetUsage();
     size_t pinned_usage = block_based_options.block_cache->GetPinnedUsage();
