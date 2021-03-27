@@ -1823,13 +1823,13 @@ Status BlockBasedTableBuilder::Finish() {
     adgMod::LearnedIndexData LID;
 
     
-    if (debug == 1) printf("------------ Lets Learn------------\n");
+    // if (debug == 1) printf("------------ Lets Learn------------\n");
     auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->max_key, r->table_options.seg_cost);
     std::string file_name = r->file->file_name();
     file_name = file_name.substr(0, file_name.find(".")).append(".txt");
     LID.WriteModel(file_name, r->block_content_sizes);
 
-    if (debug == 1) printf("=========== Sending key offsets ============\n");
+    // if (debug == 1) printf("=========== Sending key offsets ============\n");
     file_name = file_name.substr(0, file_name.find(".")).append(".offsets");
     std::ofstream output_file(file_name);
     output_file.precision(15);

@@ -11,9 +11,9 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
     rocksdb::Status s;
     std::vector<std::string> written;
     for (uint64_t i = 0; i < num_entries; i++) {
-        if (i % 50000 == 0) {
-            cout << "Completed " << std::to_string(i) << " writes" << endl;
-        }
+        // if (i % 50000 == 0) {
+        //     cout << "Completed " << std::to_string(i) << " writes" << endl;
+        // }
         std::string key, value, final_key, final_value;
         if (seq) {
             key =  std::to_string(i);
@@ -67,10 +67,10 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     std::string value;
     uint64_t found = 0;
     for (uint64_t i = 0; i < num_entries; i++) {
-        if (i % 50000 == 0) {
-            cout << "Completed " << std::to_string(i) << " reads" << endl;
-            measure_memory_usage(db, output_file);
-        }
+        // if (i % 50000 == 0) {
+        //     cout << "Completed " << std::to_string(i) << " reads" << endl;
+        //     // measure_memory_usage(db, output_file);
+        // }
         std::string key, val, final_key, final_value;
         if (seq) {
             key = std::to_string(i);
@@ -112,11 +112,27 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     cout << "Average latency (us/op): " << total_time / operation_count << endl;
 }
 
+void parse_output(std::string& out) {
+    std::string delimiter = "\n";
+    size_t pos = 0;
+    std::string token;
+    while ((pos = out.find(delimiter)) != std::string::npos) {
+        token = out.substr(0, pos);
+        if (token.find("rocksdb.block.cache.data.miss COUNT") != std::string::npos
+        || token.find("rocksdb.block.cache.data.hit COUNT") != std::string::npos
+        || token.find("rocksdb.block.cache.index.miss COUNT") != std::string::npos
+        || token.find("rocksdb.block.cache.index.hit COUNT") != std::string::npos
+        || token.find("rocksdb.db.get.micros") != std::string::npos) {
+            cout << token << endl;
+        }
+        out.erase(0, pos + delimiter.length());
+    }
+}
+
 int main(int argc, char **argv) {
     // cout << sizeof(1.0) << " " << sizeof(uint32_t) << " " << sizeof(long double) << " " <<
     //  sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
     // return 0;
-    cout << argc << endl;
     assert(argc == 5);
     dbName = argv[1];
     int num_operations = stoi(argv[2]);
@@ -125,6 +141,7 @@ int main(int argc, char **argv) {
     std::string command = "rm -rf ";
     command = command.append(dbName).append("/*");
     int result = system(command.c_str());
+    cout << "Index type: " << index_type << " Block cache size: " << block_cache_size << endl;
 
     // rocksdb::DB *db;
     rocksdb::Options options;
@@ -133,23 +150,25 @@ int main(int argc, char **argv) {
     options.target_file_size_base = 4 << 20;
     // options.use_direct_reads = true;
     options.create_if_missing = true;
-    options.compression = kNoCompression;
-    options.max_open_files = 1;
+    // options.compression = kNoCompression;
+    // options.max_open_files = 1;
     // NumericalComparator numerical_comparator;
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
     options.comparator = &custom_comparator;
     // BlockBasedTableOptions block_based_options;
-    MetadataCacheOptions metadata_cache_options;
 
     // // Block sizes will not be padded to 4096 bytes unless this is uncommented
     // block_based_options.block_align = true;
     // block_based_options.cache_index_and_filter_blocks = true;
     
-    // // DO NOT ENABLE THIS AND POINTER to BLOC CACHE at the same time
-    // block_based_options.no_block_cache = true;
+    // // DO NOT ENABLE THIS AND POINTER to BLOCK CACHE at the same time
+    block_based_options.no_block_cache = false;
+    if (block_cache_size == 0) {
+       block_based_options.no_block_cache = true; 
+    }
     
-    // block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
+    block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
     bool learned_get = false;
     switch (index_type) {
         case 1:
@@ -195,7 +214,10 @@ int main(int argc, char **argv) {
         default:
             cout << "Option not available" << endl;
     }
-    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
+    if (block_based_options.no_block_cache == false) {
+        block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
+        // block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
+    }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
@@ -204,29 +226,38 @@ int main(int argc, char **argv) {
     auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
-    block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
+    if (block_based_options.no_block_cache == false) {
+        block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
+        // block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
+    }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
-    // read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+    read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
-    //cout << out << endl;
+    parse_output(out);
 
-    cout << "\nReading second time\n" << endl;
+    cout << "Reading second time" << endl;
 
-    // options.statistics = rocksdb::CreateDBStatistics();
-    // read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+    options.statistics = rocksdb::CreateDBStatistics();
+    read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
-    size_t cache_usage = block_based_options.block_cache->GetUsage();
-    size_t pinned_usage = block_based_options.block_cache->GetPinnedUsage();
     cout << "Table reader memory usage: " << out << endl;
-    cout << "Block cache usage: " << cache_usage << endl;
-    cout << "Block cache pinned usage: " << pinned_usage << endl;
+
+    if (block_based_options.no_block_cache == false) {
+        size_t cache_usage = block_based_options.block_cache->GetUsage();
+        size_t pinned_usage = block_based_options.block_cache->GetPinnedUsage();
+        // size_t compressed_cache_usage = block_based_options.block_cache_compressed->GetUsage();
+        cout << "Block cache usage: " << cache_usage << endl;
+        cout << "Block cache pinned usage: " << pinned_usage << endl;
+        // cout << "Compressed block cache usage: " << compressed_cache_usage << endl;
+    }
     db->GetProperty("rocksdb.options-statistics", &out);
-    // cout << out << endl;
+    parse_output(out);
+    cout << endl;
 
     // measure_sizes();
     // measure_memory_usage();

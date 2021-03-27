@@ -214,9 +214,9 @@ namespace adgMod {
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
-        if (debug == 1) {
-            printf("Reading file : %s\n", filename.c_str());
-        }
+        // if (debug == 1) {
+        //     printf("Reading file : %s\n", filename.c_str());
+        // }
         std::ifstream input_file(filename);
         string start_key_data;
         long double err;

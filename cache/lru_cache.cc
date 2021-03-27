@@ -111,7 +111,6 @@ LRUCacheShard::LRUCacheShard(size_t capacity, bool strict_capacity_limit,
   lru_.next = &lru_;
   lru_.prev = &lru_;
   lru_low_pri_ = &lru_;
-  printf("LRUCacheShard size %lu\n", capacity);
   SetCapacity(capacity);
 }
 
@@ -472,7 +471,6 @@ LRUCache::LRUCache(size_t capacity, int num_shard_bits,
                    CacheMetadataChargePolicy metadata_charge_policy)
     : ShardedCache(capacity, num_shard_bits, strict_capacity_limit,
                    std::move(allocator)) {
-  printf("LRUCache capcacity %lu\n", capacity);
   num_shards_ = 1 << num_shard_bits;
   shards_ = reinterpret_cast<LRUCacheShard*>(
       port::cacheline_aligned_alloc(sizeof(LRUCacheShard) * num_shards_));
@@ -558,7 +556,7 @@ std::shared_ptr<Cache> NewLRUCache(
     double high_pri_pool_ratio,
     std::shared_ptr<MemoryAllocator> memory_allocator, bool use_adaptive_mutex,
     CacheMetadataChargePolicy metadata_charge_policy) {
-  printf("New LRU cache %lu %d\n", capacity, num_shard_bits);
+  // printf("New LRU cache %lu %d\n", capacity, num_shard_bits);
   if (num_shard_bits >= 20) {
     return nullptr;  // the cache cannot be sharded into too many fine pieces
   }

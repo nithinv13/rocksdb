@@ -241,16 +241,16 @@ DBImpl::DBImpl(const DBOptions& options, const std::string& dbname,
 
   // Reserve ten files or so for other uses and give the rest to TableCache.
   // Give a large number for setting of "infinite" open files.
-  // const int table_cache_size = (mutable_db_options_.max_open_files == -1)
-  //                                  ? TableCache::kInfiniteCapacity
-  //                                  : mutable_db_options_.max_open_files - 10;
+  const int table_cache_size = (mutable_db_options_.max_open_files == -1)
+                                   ? TableCache::kInfiniteCapacity
+                                   : mutable_db_options_.max_open_files - 10;
   LRUCacheOptions co;
-  // co.capacity = table_cache_size;
-  co.capacity = 5000;
+  co.capacity = table_cache_size;
+  // co.capacity = 5000;
   // co.num_shard_bits = immutable_db_options_.table_cache_numshardbits;
-  co.num_shard_bits = 1;
-  // co.metadata_charge_policy = kDontChargeCacheMetadata;
-  co.metadata_charge_policy = kFullChargeCacheMetadata;
+  // co.num_shard_bits = 1;
+  co.metadata_charge_policy = kDontChargeCacheMetadata;
+  // co.metadata_charge_policy = kFullChargeCacheMetadata;
   co.strict_capacity_limit = true;
   table_cache_ = NewLRUCache(co);
 

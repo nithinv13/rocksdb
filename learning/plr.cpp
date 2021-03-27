@@ -439,7 +439,7 @@ std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >
 	segments.push_back(Segment(keys[0].first, 0, error, slope, intercept));
 
 
-	std::cout << std::endl << error << std::endl;
+	// std::cout << std::endl << error << std::endl;
 	
 	return segments;
 }
