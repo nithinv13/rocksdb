@@ -191,7 +191,9 @@ Status TableCache::FindTable(const ReadOptions& ro,
       // We do not cache error results so that if the error is transient,
       // or somebody repairs the file, we recover automatically.
     } else {
-      s = cache_->Insert(key, table_reader.get(), 1, &DeleteEntry<TableReader>,
+      size_t charge = table_reader.get()->ApproximateMemoryUsage();
+      // size_t charge = 1;
+      s = cache_->Insert(key, table_reader.get(), charge, &DeleteEntry<TableReader>,
                          handle);
       if (s.ok()) {
         // Release ownership of table reader.

@@ -251,9 +251,9 @@ DBImpl::DBImpl(const DBOptions& options, const std::string& dbname,
   // co.num_shard_bits = 1;
   co.metadata_charge_policy = kDontChargeCacheMetadata;
   // co.metadata_charge_policy = kFullChargeCacheMetadata;
-  co.strict_capacity_limit = true;
+  // co.strict_capacity_limit = true;
   table_cache_ = NewLRUCache(co);
-
+ 
   versions_.reset(new VersionSet(dbname_, &immutable_db_options_, file_options_,
                                  table_cache_.get(), write_buffer_manager_,
                                  &write_controller_, &block_cache_tracer_,

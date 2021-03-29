@@ -1151,6 +1151,9 @@ size_t BlockBasedTable::ApproximateMemoryUsage() const {
   }
   if (rep_->table_options.use_learning) {
     usage = (rep_->lid).GetApproximateSize();
+    if (rep_->filter) {
+      usage += rep_->filter->ApproximateMemoryUsage();
+    }
   }
   return usage;
 }

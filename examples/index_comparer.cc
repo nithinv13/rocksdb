@@ -133,25 +133,28 @@ int main(int argc, char **argv) {
     // cout << sizeof(1.0) << " " << sizeof(uint32_t) << " " << sizeof(long double) << " " <<
     //  sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
     // return 0;
-    assert(argc == 5);
+    assert(argc == 6);
     dbName = argv[1];
     int num_operations = stoi(argv[2]);
     int block_cache_size = stoi(argv[3]);
-    int index_type = stoi(argv[4]);
+    int table_cache_size = stoi(argv[4]);
+    int index_type = stoi(argv[5]);
     std::string command = "rm -rf ";
     command = command.append(dbName).append("/*");
     int result = system(command.c_str());
-    cout << "Index type: " << index_type << " Block cache size: " << block_cache_size << endl;
+    command = "sync; echo 3 > /proc/sys/vm/drop_caches";
+    result = system(command.c_str());
+    cout << "Index type: " << index_type << " Block cache size: " << block_cache_size << " Table cache size: " << table_cache_size << endl;
 
     // rocksdb::DB *db;
     rocksdb::Options options;
     options.statistics = rocksdb::CreateDBStatistics();
     options.write_buffer_size = 4 << 20;
     options.target_file_size_base = 4 << 20;
-    // options.use_direct_reads = true;
+    options.use_direct_reads = true;
     options.create_if_missing = true;
     // options.compression = kNoCompression;
-    // options.max_open_files = 1;
+    options.max_open_files = table_cache_size;
     // NumericalComparator numerical_comparator;
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
@@ -216,7 +219,7 @@ int main(int argc, char **argv) {
     }
     if (block_based_options.no_block_cache == false) {
         block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
-        // block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
+        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024), true, 0.2);
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
@@ -228,7 +231,7 @@ int main(int argc, char **argv) {
     delete db;
     if (block_based_options.no_block_cache == false) {
         block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
-        // block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
+        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024), true, 0.2);
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
@@ -236,13 +239,13 @@ int main(int argc, char **argv) {
     read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     std::string out;
-    db->GetProperty("rocksdb.options-statistics", &out);
-    parse_output(out);
+    // db->GetProperty("rocksdb.options-statistics", &out);
+    // parse_output(out);
 
-    cout << "Reading second time" << endl;
+    // cout << "Reading second time" << endl;
 
-    options.statistics = rocksdb::CreateDBStatistics();
-    read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+    // options.statistics = rocksdb::CreateDBStatistics();
+    // read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;
