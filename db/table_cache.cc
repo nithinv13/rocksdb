@@ -192,7 +192,8 @@ Status TableCache::FindTable(const ReadOptions& ro,
       // or somebody repairs the file, we recover automatically.
     } else {
       size_t charge = table_reader.get()->ApproximateMemoryUsage();
-      // size_t charge = 1;
+      // printf("Charge %lu\n", charge);
+      // charge = 1;
       s = cache_->Insert(key, table_reader.get(), charge, &DeleteEntry<TableReader>,
                          handle);
       if (s.ok()) {

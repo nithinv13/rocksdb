@@ -67,7 +67,7 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     std::string value;
     uint64_t found = 0;
     for (uint64_t i = 0; i < num_entries; i++) {
-        // if (i % 50000 == 0) {
+        // if (i % 10000 == 0) {
         //     cout << "Completed " << std::to_string(i) << " reads" << endl;
         //     // measure_memory_usage(db, output_file);
         // }
@@ -142,8 +142,8 @@ int main(int argc, char **argv) {
     std::string command = "rm -rf ";
     command = command.append(dbName).append("/*");
     int result = system(command.c_str());
-    command = "sync; echo 3 > /proc/sys/vm/drop_caches";
-    result = system(command.c_str());
+    // command = "sync; echo 3 > /proc/sys/vm/drop_caches";
+    // result = system(command.c_str());
     cout << "Index type: " << index_type << " Block cache size: " << block_cache_size << " Table cache size: " << table_cache_size << endl;
 
     // rocksdb::DB *db;
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
        block_based_options.no_block_cache = true; 
     }
     
-    block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
+    // block_based_options.filter_policy.reset(rocksdb::NewBloomFilterPolicy(10, false));
     bool learned_get = false;
     switch (index_type) {
         case 1:
@@ -224,9 +224,9 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    int write_key_range = num_operations;
-    int read_key_range = num_operations;
-    auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
+    int write_key_range = num_operations*10;
+    int read_key_range = num_operations*10;
+    auto written = write(db, num_operations, 8, 100, true, false, write_key_range);
     // db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
-    read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+    read(db, 50000, learned_get, 8, 100, true, false, read_key_range, written, true);
 
     std::string out;
     // db->GetProperty("rocksdb.options-statistics", &out);
