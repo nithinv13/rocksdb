@@ -228,6 +228,11 @@ class TableCache {
   BlockCacheTracer* const block_cache_tracer_;
   Striped<port::Mutex, Slice> loader_mutex_;
   std::shared_ptr<IOTracer> io_tracer_;
+  int hit_count_;
+  int miss_count_;
+  int add_count_;
+  int table_cache_get_count;
+  int find_table_count;
 };
 
 }  // namespace ROCKSDB_NAMESPACE

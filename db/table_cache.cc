@@ -75,7 +75,12 @@ TableCache::TableCache(const ImmutableCFOptions& ioptions,
       immortal_tables_(false),
       block_cache_tracer_(block_cache_tracer),
       loader_mutex_(kLoadConcurency, GetSliceNPHash64),
-      io_tracer_(io_tracer) {
+      io_tracer_(io_tracer),
+      hit_count_(0),
+      miss_count_(0),
+      add_count_(0),
+      table_cache_get_count(0),
+      find_table_count(0) {
   if (ioptions_.row_cache) {
     // If the same cache is shared by multiple instances, we need to
     // disambiguate its entries.
@@ -161,12 +166,18 @@ Status TableCache::FindTable(const ReadOptions& ro,
                              HistogramImpl* file_read_hist, bool skip_filters,
                              int level, bool prefetch_index_and_filter_in_cache,
                              size_t max_file_size_for_l0_meta_pin) {
+  find_table_count += 1;
   PERF_TIMER_GUARD_WITH_ENV(find_table_nanos, ioptions_.env);
   uint64_t number = fd.GetNumber();
   Slice key = GetSliceForFileNumber(&number);
   *handle = cache_->Lookup(key);
   TEST_SYNC_POINT_CALLBACK("TableCache::FindTable:0",
                            const_cast<bool*>(&no_io));
+
+  if (*handle != nullptr) {
+    hit_count_ += 1;
+    // printf("Hit count %d\n", hit_count_);
+  }
 
   if (*handle == nullptr) {
     if (no_io) {
@@ -176,8 +187,12 @@ Status TableCache::FindTable(const ReadOptions& ro,
     // We check the cache again under loading mutex
     *handle = cache_->Lookup(key);
     if (*handle != nullptr) {
+      hit_count_ += 1;
       return Status::OK();
     }
+
+    miss_count_ += 1;
+    // printf("Miss count %d\n", miss_count_);
 
     std::unique_ptr<TableReader> table_reader;
     Status s = GetTableReader(
@@ -198,6 +213,8 @@ Status TableCache::FindTable(const ReadOptions& ro,
                          handle);
       if (s.ok()) {
         // Release ownership of table reader.
+        add_count_ += 1;
+        // printf("Add count %d\n", add_count_);
         table_reader.release();
       }
     }
@@ -395,6 +412,18 @@ Status TableCache::Get(const ReadOptions& options,
                        HistogramImpl* file_read_hist, bool skip_filters,
                        int level, size_t max_file_size_for_l0_meta_pin) {
 
+  if (table_cache_get_count == 0) {
+    hit_count_ = 0;
+    miss_count_ = 0;
+    add_count_ = 0;
+  }
+  // printf("Table cache get count %d\n", table_cache_get_count);
+  if (table_cache_get_count % 100000 == 0) {
+    printf("Table cache get count %d\nFind table count %d\nHit count %d\nMiss count %d\nAdd count %d\n", 
+    table_cache_get_count, find_table_count, hit_count_, miss_count_, add_count_);
+    printf("Table cache hit rate %0.2f\n", (float) (hit_count_ * 100) / (hit_count_ + miss_count_ + 1));
+  }
+  table_cache_get_count += 1;
   auto& fd = file_meta.fd;
   std::string* row_cache_entry = nullptr;
   bool done = false;
@@ -416,6 +445,9 @@ Status TableCache::Get(const ReadOptions& options,
 #endif  // ROCKSDB_LITE
   Status s;
   TableReader* t = fd.table_reader;
+  if (t != nullptr) {
+    hit_count_ += 1;
+  }
   Cache::Handle* handle = nullptr;
   if (!done) {
     assert(s.ok());

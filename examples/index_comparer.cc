@@ -67,10 +67,10 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     std::string value;
     uint64_t found = 0;
     for (uint64_t i = 0; i < num_entries; i++) {
-        // if (i % 10000 == 0) {
-        //     cout << "Completed " << std::to_string(i) << " reads" << endl;
-        //     // measure_memory_usage(db, output_file);
-        // }
+        if (i % 50000 == 0) {
+            cout << "Completed " << std::to_string(i) << " reads" << endl;
+            // measure_memory_usage(db, output_file);
+        }
         std::string key, val, final_key, final_value;
         if (seq) {
             key = std::to_string(i);
@@ -224,9 +224,12 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
-    int write_key_range = num_operations*10;
-    int read_key_range = num_operations*10;
-    auto written = write(db, num_operations, 8, 100, true, false, write_key_range);
+    // For random writes, multipy num_operations by a constant like 10
+    int write_key_range = num_operations;
+    int read_key_range = num_operations;
+    // For random writes, make seq = false
+    // auto written = write(db, num_operations, 8, 100, true, false, write_key_range);
+    auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
@@ -236,16 +239,24 @@ int main(int argc, char **argv) {
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
-    read(db, 50000, learned_get, 8, 100, true, false, read_key_range, written, true);
+    // DB::OpenForReadOnly(options, dbName, &db);
+    // db->SetDBOptions({{"max_open_files", "6400*1024"}});
+    printf("Starting to read now\n");
+    // rocksdb::DBImpl* db_impl = dynamic_cast<DBImpl*>(db);
+    // if (db_impl != nullptr) {
+    //     db_impl->TEST_table_cache()->hit_count_ = 0;
+    // }
+    // For reads from randomly written data, make random_writes = true
+    read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     std::string out;
-    // db->GetProperty("rocksdb.options-statistics", &out);
-    // parse_output(out);
+    db->GetProperty("rocksdb.options-statistics", &out);
+    parse_output(out);
 
-    // cout << "Reading second time" << endl;
+    cout << "Reading second time" << endl;
 
     // options.statistics = rocksdb::CreateDBStatistics();
-    // read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+    read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;
@@ -260,7 +271,7 @@ int main(int argc, char **argv) {
     }
     db->GetProperty("rocksdb.options-statistics", &out);
     parse_output(out);
-    cout << endl;
+    cout << out << endl;
 
     // measure_sizes();
     // measure_memory_usage();
