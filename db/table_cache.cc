@@ -165,8 +165,9 @@ Status TableCache::FindTable(const ReadOptions& ro,
                              const bool no_io, bool record_read_stats,
                              HistogramImpl* file_read_hist, bool skip_filters,
                              int level, bool prefetch_index_and_filter_in_cache,
-                             size_t max_file_size_for_l0_meta_pin) {
-  find_table_count += 1;
+                             size_t max_file_size_for_l0_meta_pin, bool from_Get) {
+  if (from_Get)
+    find_table_count += 1;
   PERF_TIMER_GUARD_WITH_ENV(find_table_nanos, ioptions_.env);
   uint64_t number = fd.GetNumber();
   Slice key = GetSliceForFileNumber(&number);
@@ -175,7 +176,8 @@ Status TableCache::FindTable(const ReadOptions& ro,
                            const_cast<bool*>(&no_io));
 
   if (*handle != nullptr) {
-    hit_count_ += 1;
+    if (from_Get)
+      hit_count_ += 1;
     // printf("Hit count %d\n", hit_count_);
   }
 
@@ -187,11 +189,13 @@ Status TableCache::FindTable(const ReadOptions& ro,
     // We check the cache again under loading mutex
     *handle = cache_->Lookup(key);
     if (*handle != nullptr) {
-      hit_count_ += 1;
+      if (from_Get)
+        hit_count_ += 1;
       return Status::OK();
     }
 
-    miss_count_ += 1;
+    if (from_Get)
+      miss_count_ += 1;
     // printf("Miss count %d\n", miss_count_);
 
     std::unique_ptr<TableReader> table_reader;
@@ -213,7 +217,8 @@ Status TableCache::FindTable(const ReadOptions& ro,
                          handle);
       if (s.ok()) {
         // Release ownership of table reader.
-        add_count_ += 1;
+        if (from_Get)
+          add_count_ += 1;
         // printf("Add count %d\n", add_count_);
         table_reader.release();
       }
@@ -457,7 +462,7 @@ Status TableCache::Get(const ReadOptions& options,
                     options.read_tier == kBlockCacheTier /* no_io */,
                     true /* record_read_stats */, file_read_hist, skip_filters,
                     level, true /* prefetch_index_and_filter_in_cache */,
-                    max_file_size_for_l0_meta_pin);
+                    max_file_size_for_l0_meta_pin, true);
       if (s.ok()) {
         t = GetTableReaderFromHandle(handle);
       }

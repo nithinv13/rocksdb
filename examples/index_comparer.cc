@@ -49,13 +49,14 @@ void measure_memory_usage(DB* db, std::ofstream& output_file) {
     output_file << out << "," << cache_usage << "," << pinned_usage << "\n";
 }
 
-void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
- bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false) {
+std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
+ bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {}) {
     assert(!random_write || v.size() > 0);
     std::ofstream output_file(dbName.append("/memory_usage.csv"), std::ios_base::app | std::ios_base::out);
     output_file.precision(15);
     output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
     ReadOptions read_options;
+    std::vector<std::string> reading;
     if (use_learning) {
         read_options.learned_get = true;
     } else {
@@ -88,7 +89,12 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
         if (pad) {
             final_key = string(key_size - key.length(), '0') + key;
             final_value = string(value_size - val.length(), '0') + val;
-        } 
+        }
+        if (previously_read) {
+            final_key = already_read[i];
+            final_value = final_key;
+        }
+        reading.push_back(final_key); 
 
         auto start = high_resolution_clock::now();
         s = db->Get(read_options, Slice(final_key), &value);
@@ -110,6 +116,8 @@ void read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int
     cout << "Total time taken: " << total_time << endl;
     cout << "Throughput: " << operation_count * 1000000 / total_time << endl;
     cout << "Average latency (us/op): " << total_time / operation_count << endl;
+
+    return reading;
 }
 
 void parse_output(std::string& out) {
@@ -247,7 +255,7 @@ int main(int argc, char **argv) {
     //     db_impl->TEST_table_cache()->hit_count_ = 0;
     // }
     // For reads from randomly written data, make random_writes = true
-    read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written, false);
+    auto reading = read(db, 50000, learned_get, 8, 100, true, false, read_key_range, written, true);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -256,7 +264,8 @@ int main(int argc, char **argv) {
     cout << "Reading second time" << endl;
 
     // options.statistics = rocksdb::CreateDBStatistics();
-    read(db, 200000, learned_get, 8, 100, true, false, read_key_range, written, false);
+    // bool dont_care = false;
+    // read(db, 50000, learned_get, 8, 100, true, false, read_key_range, written, dont_care, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;

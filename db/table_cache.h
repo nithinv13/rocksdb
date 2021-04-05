@@ -139,7 +139,7 @@ class TableCache {
                    HistogramImpl* file_read_hist = nullptr,
                    bool skip_filters = false, int level = -1,
                    bool prefetch_index_and_filter_in_cache = true,
-                   size_t max_file_size_for_l0_meta_pin = 0);
+                   size_t max_file_size_for_l0_meta_pin = 0, bool from_Get = false);
 
   // Get TableReader from a cache handle.
   TableReader* GetTableReaderFromHandle(Cache::Handle* handle);
