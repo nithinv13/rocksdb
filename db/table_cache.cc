@@ -423,10 +423,13 @@ Status TableCache::Get(const ReadOptions& options,
     add_count_ = 0;
   }
   // printf("Table cache get count %d\n", table_cache_get_count);
-  if (table_cache_get_count % 100000 == 0) {
+  if (table_cache_get_count % 100000 == 0 && table_cache_get_count != 0) {
     printf("Table cache get count %d\nFind table count %d\nHit count %d\nMiss count %d\nAdd count %d\n", 
     table_cache_get_count, find_table_count, hit_count_, miss_count_, add_count_);
     printf("Table cache hit rate %0.2f\n", (float) (hit_count_ * 100) / (hit_count_ + miss_count_ + 1));
+    hit_count_ = 0;
+    miss_count_ = 0;
+    add_count_ = 0;
   }
   table_cache_get_count += 1;
   auto& fd = file_meta.fd;

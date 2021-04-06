@@ -247,7 +247,7 @@ DBImpl::DBImpl(const DBOptions& options, const std::string& dbname,
   LRUCacheOptions co;
   // co.capacity = table_cache_size;
   // printf("Table cache capacity %d\n", table_cache_size);
-  co.capacity = 100*1024;
+  co.capacity = 6400*1024;
   // co.capacity = 5000;
   // co.num_shard_bits = immutable_db_options_.table_cache_numshardbits;
   // co.num_shard_bits = 1;
