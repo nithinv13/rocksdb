@@ -455,6 +455,8 @@ struct DBOptions {
   // Dynamically changeable through SetDBOptions() API.
   int max_open_files = -1;
 
+  int max_table_cache_size = -1;
+
   // If max_open_files is -1, DB will open all files on DB::Open(). You can
   // use this option to increase the number of threads used to open the files.
   // Default: 16

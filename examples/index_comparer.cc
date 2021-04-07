@@ -141,6 +141,10 @@ int main(int argc, char **argv) {
     // cout << sizeof(1.0) << " " << sizeof(uint32_t) << " " << sizeof(long double) << " " <<
     //  sizeof(std::vector<double>{1.0, 2.0, 3.0}) << endl;
     // return 0;
+    // std::string input = "10976544444444444444";
+    // uint64_t output = (uint64_t)(stoll(input.substr(0, 22)));
+    // cout << output << endl;
+    // return 0;
     assert(argc == 6);
     dbName = argv[1];
     int num_operations = stoi(argv[2]);
@@ -161,12 +165,14 @@ int main(int argc, char **argv) {
     options.target_file_size_base = 4 << 20;
     options.use_direct_reads = true;
     options.create_if_missing = true;
-    // options.compression = kNoCompression;
-    options.max_open_files = table_cache_size;
+    options.compression = kNoCompression;
+    // options.max_open_files = -1;
+
+    options.max_table_cache_size = table_cache_size;
     // NumericalComparator numerical_comparator;
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
-    options.comparator = &custom_comparator;
+    // options.comparator = &custom_comparator;
     // BlockBasedTableOptions block_based_options;
 
     // // Block sizes will not be padded to 4096 bytes unless this is uncommented
@@ -237,7 +243,7 @@ int main(int argc, char **argv) {
     int read_key_range = num_operations;
     // For random writes, make seq = false
     // auto written = write(db, num_operations, 8, 100, true, false, write_key_range);
-    auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
+    auto written = write(db, num_operations, 10, 100, true, true, write_key_range);
     // db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
@@ -255,7 +261,7 @@ int main(int argc, char **argv) {
     //     db_impl->TEST_table_cache()->hit_count_ = 0;
     // }
     // For reads from randomly written data, make random_writes = true
-    auto reading = read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written);
+    auto reading = read(db, 100001, learned_get, 10, 100, true, false, read_key_range, written);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -265,7 +271,7 @@ int main(int argc, char **argv) {
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written, false, true, reading);
+    // read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;
