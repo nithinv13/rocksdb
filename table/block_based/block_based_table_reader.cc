@@ -1109,10 +1109,19 @@ void BlockBasedTable::PrefetchLearnedIndexData(std::string file_name) {
     return;
   }
   file_name = file_name.substr(0, file_name.find_first_of(".")).append(".txt");
+  std::string file_key = file_name.substr(0, file_name.find_first_of("."));
   // if (debug == 1) {
   //   printf("File path %s\n", file_name.c_str());
   // }
-  (rep_->lid).ReadModel(file_name);
+  if (cached.find(file_key) == cached.end()) {
+      (rep_->lid).ReadModel(file_name);
+      mtx.lock();
+      cached[file_key] = rep_->lid;
+      mtx.unlock();
+  }
+  else {
+      rep_->lid = cached[file_key];
+  }
 }
 
 void BlockBasedTable::SetupForCompaction() {

@@ -36,6 +36,8 @@ namespace adgMod {
         std::atomic<bool> learned;
         std::atomic<bool> aborted;
         std::atomic<bool> learning;
+
+        std::ifstream input_file;
     public:
         // is the data of this model filled (ready for learning)
         bool filled;

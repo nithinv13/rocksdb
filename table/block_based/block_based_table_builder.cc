@@ -1912,6 +1912,6 @@ const std::string BlockBasedTable::kFilterBlockPrefix = "filter.";
 const std::string BlockBasedTable::kFullFilterBlockPrefix = "fullfilter.";
 const std::string BlockBasedTable::kPartitionedFilterBlockPrefix =
     "partitionedfilter.";
-// std::unordered_map<uint64_t, adgMod::LearnedIndexData> BlockBasedTable::cached;
-// std::mutex BlockBasedTable::mtx;
+std::unordered_map<std::string, adgMod::LearnedIndexData> BlockBasedTable::cached;
+std::mutex BlockBasedTable::mtx;
 }  // namespace ROCKSDB_NAMESPACE

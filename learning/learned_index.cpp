@@ -217,7 +217,16 @@ namespace adgMod {
         // if (debug == 1) {
         //     printf("Reading file : %s\n", filename.c_str());
         // }
-        std::ifstream input_file(filename);
+        
+        if (!input_file.is_open()) {
+            input_file.open(filename, std::ifstream::in);
+            // std::cout << "Re-open file\n";
+        }
+        else
+            std::cout << "No need to open " << filename << std::endl;
+
+        // std::cout << "Model file opened\n";
+
         string start_key_data;
         long double err;
 
