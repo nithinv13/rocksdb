@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
     // NumericalComparator numerical_comparator;
     // options.comparator = &numerical_comparator;
     CustomComparator custom_comparator;
-    // options.comparator = &custom_comparator;
+    options.comparator = &custom_comparator;
     // BlockBasedTableOptions block_based_options;
 
     // // Block sizes will not be padded to 4096 bytes unless this is uncommented
@@ -243,7 +243,7 @@ int main(int argc, char **argv) {
     int read_key_range = num_operations;
     // For random writes, make seq = false
     // auto written = write(db, num_operations, 8, 100, true, false, write_key_range);
-    auto written = write(db, num_operations, 10, 100, true, true, write_key_range);
+    auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
     //     db_impl->TEST_table_cache()->hit_count_ = 0;
     // }
     // For reads from randomly written data, make random_writes = true
-    auto reading = read(db, 100001, learned_get, 10, 100, true, false, read_key_range, written);
+    auto reading = read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
