@@ -73,8 +73,8 @@ class BlockBasedTable : public TableReader {
   static const size_t kMaxAutoReadaheadSize;
   static const int kMinNumFileReadsToStartAutoReadahead = 2;
 
-  static std::unordered_map<std::string, adgMod::LearnedIndexData> cached;
-  static std::mutex mtx;
+  // static std::unordered_map<std::string, adgMod::LearnedIndexData> cached;
+  // static std::mutex mtx;
 
   // Attempt to open the table that is stored in bytes [0..file_size)
   // of "file", and read the metadata entries necessary to allow
