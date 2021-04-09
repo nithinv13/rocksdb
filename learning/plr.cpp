@@ -332,7 +332,7 @@ std::vector<Segment> SLSR::train(std::vector<std::pair<std::string, key_type> >&
 		std::cout << "Begin SLSR training\n";
 	
 	for (j = 1; j <= size; j++)	{
-		long double key = stoll(keys[j-1].first.substr(0, 8));
+		long double key = stoll(keys[j-1].first.substr(0, key_size));
 		long double off = keys[j-1].second;
 		cum_x[j] = cum_x[j-1] + key;
 		cum_y[j] = cum_y[j-1] + off;
@@ -360,7 +360,7 @@ std::vector<Segment> SLSR::train(std::vector<std::pair<std::string, key_type> >&
 			intercept[i][j] = (y_sum - slope[i][j] * x_sum) / double(interval);
             
            	for (k = i, error[i][j] = 0.0, max_error[i][j] = 0.0; k <= j; k++)	{
-				long double pt_err = (long double)keys[k-1].second - slope[i][j] * stoll(keys[k-1].first.substr(0, 8)) - intercept[i][j];
+				long double pt_err = (long double)keys[k-1].second - slope[i][j] * stoll(keys[k-1].first.substr(0, key_size)) - intercept[i][j];
 				
 				// hinge loss function
             	// if (abs(pt_err) > (double)err)
@@ -413,7 +413,7 @@ std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >
 	size = keys.size();
 	long double mean_x = 0, mean_y = 0, cum_xy = 0, cum_x2 = 0;
 	for (int i = 0; i < size; i++) {
-		long double key = stoll(keys[i].first.substr(0, 8));
+		long double key = stoll(keys[i].first.substr(0, key_size));
 		mean_x += key;
 		mean_y += (long double)keys[i].second;
 		cum_x2 += key * key;
@@ -430,7 +430,7 @@ std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >
 	
 	long double error = 0;
 	for (int i = 0; i < size; i++) {
-		long double key = stoll(keys[i].first.substr(0, 8));
+		long double key = stoll(keys[i].first.substr(0, key_size));
 		auto pred = slope * key + intercept;
 		auto err = abs(keys[i].second - pred);
 		// std::cout << err << " " ;

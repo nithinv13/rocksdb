@@ -1,5 +1,6 @@
 #include "benchmarker.h"
 #include "rocksdb/filter_policy.h"
+#include <thread>
 
 string dbName = "/tmp/learnedDB";
 DB* db;
@@ -11,9 +12,9 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
     rocksdb::Status s;
     std::vector<std::string> written;
     for (uint64_t i = 0; i < num_entries; i++) {
-        // if (i % 50000 == 0) {
-        //     cout << "Completed " << std::to_string(i) << " writes" << endl;
-        // }
+        if (i % 50000 == 0) {
+            cout << "Completed " << std::to_string(i) << " writes" << endl;
+        }
         std::string key, value, final_key, final_value;
         if (seq) {
             key =  std::to_string(i);
@@ -52,9 +53,10 @@ void measure_memory_usage(DB* db, std::ofstream& output_file) {
 std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
  bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {}) {
     assert(!random_write || v.size() > 0);
-    std::ofstream output_file(dbName.append("/memory_usage.csv"), std::ios_base::app | std::ios_base::out);
-    output_file.precision(15);
-    output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
+    // std::ofstream output_file(dbName.append("/memory_usage.csv"), std::ios_base::app | std::ios_base::out);
+    // output_file.precision(15);
+    // output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
+    // std::ofstream read_latency_file(dbName.append("/read_latencies.txt"), std::ios_base::app | std::ios_base::out);
     ReadOptions read_options;
     std::vector<std::string> reading;
     if (use_learning) {
@@ -108,6 +110,7 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
             cout << final_key << " : " << final_value << " " << value << endl;
         }
         uint64_t duration = static_cast<uint64_t>(duration_cast<microseconds>(stop - start).count());
+        // read_latency_file << duration << "\n";
         total_time += duration;
         operation_count += 1;
     }
@@ -145,6 +148,7 @@ int main(int argc, char **argv) {
     // uint64_t output = (uint64_t)(stoll(input.substr(0, 22)));
     // cout << output << endl;
     // return 0;
+    printf("Key size in main %d\n", key_size);
     assert(argc == 6);
     dbName = argv[1];
     int num_operations = stoi(argv[2]);
@@ -156,7 +160,7 @@ int main(int argc, char **argv) {
     int result = system(command.c_str());
     // command = "sync; echo 3 > /proc/sys/vm/drop_caches";
     // result = system(command.c_str());
-    cout << "Index type: " << index_type << " Block cache size: " << block_cache_size << " Table cache size: " << table_cache_size << endl;
+    cout << "DB size: " << num_operations << " Index type: " << index_type << " Block cache size: " << block_cache_size << " Table cache size: " << table_cache_size << endl;
 
     // rocksdb::DB *db;
     rocksdb::Options options;
@@ -233,17 +237,17 @@ int main(int argc, char **argv) {
     }
     if (block_based_options.no_block_cache == false) {
         block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
-        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024), true, 0.2);
+        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024), true, 0.5);
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     // For random writes, multipy num_operations by a constant like 10
-    int write_key_range = num_operations;
-    int read_key_range = num_operations;
+    int write_key_range = num_operations*10;
+    int read_key_range = num_operations*10;
     // For random writes, make seq = false
-    // auto written = write(db, num_operations, 8, 100, true, false, write_key_range);
-    auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
+    auto written = write(db, num_operations, key_size, 100, true, false, write_key_range);
+    // auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
@@ -255,13 +259,16 @@ int main(int argc, char **argv) {
     DB::Open(options, dbName, &db);
     // DB::OpenForReadOnly(options, dbName, &db);
     // db->SetDBOptions({{"max_open_files", "6400*1024"}});
+    std::this_thread::sleep_for(std::chrono::seconds(5));
     printf("Starting to read now\n");
     // rocksdb::DBImpl* db_impl = dynamic_cast<DBImpl*>(db);
     // if (db_impl != nullptr) {
     //     db_impl->TEST_table_cache()->hit_count_ = 0;
     // }
     // For reads from randomly written data, make random_writes = true
-    auto reading = read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written);
+    // std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
+    // bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {})
+    auto reading = read(db, 100001, learned_get, key_size, 100, true, false, read_key_range, written, true);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -271,7 +278,7 @@ int main(int argc, char **argv) {
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    // read(db, 100001, learned_get, 8, 100, true, false, read_key_range, written, false, true, reading);
+    read(db, 100001, learned_get, key_size, 100, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;

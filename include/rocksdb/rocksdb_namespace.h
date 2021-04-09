@@ -8,4 +8,5 @@
 #ifndef ROCKSDB_NAMESPACE
 #define ROCKSDB_NAMESPACE rocksdb
 const int debug = 1;
+const int key_size = 8;
 #endif

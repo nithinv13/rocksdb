@@ -194,9 +194,12 @@ Status TableCache::FindTable(const ReadOptions& ro,
       return Status::OK();
     }
 
-    if (from_Get)
+    if (from_Get) {
       miss_count_ += 1;
-    // printf("Miss count %d\n", miss_count_);
+      // printf("Miss count %d, missed file %d\n", miss_count_, (int)fd.packed_number_and_path_id);
+    }
+
+    
 
     std::unique_ptr<TableReader> table_reader;
     Status s = GetTableReader(

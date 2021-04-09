@@ -18,13 +18,16 @@ df[5] = 6567588
 #         print(command)
 #         os.system(command)
 
-for index in [2]:
-    for table_cache_size in [100, 200, 400, 800, 1600, 3200, 6400]:
-        if index == 2:
-            block_cache_size = table_cache_size 
-            table_cache_size = 200
-        else:
-            block_cache_size = 0
-        command = "./index_comparer /mydata/learnedDB 5000000 " + str(block_cache_size*1024) + " " + "-1" + " " + str(index) + " >> /mydata/rocksdb/examples/output.txt"
-        print(command)
-        os.system(command)
+database_sizes = [5000000]
+table_cache_sizes = [str(i*100*1024) for i in range(0, 36)]
+for database_size in database_sizes:
+    for index in [1, 2, 4, 5]:
+        for table_cache_size in table_cache_sizes:
+            if index == 2:
+                block_cache_size = table_cache_size 
+                table_cache_size = 200*1024
+            else:
+                block_cache_size = 0
+            command = "./index_comparer /mydata/learnedDB " + str(database_size) + " " + str(block_cache_size) + " " + str(table_cache_size) + " " + str(index) + " >> /mydata/rocksdb/examples/output.txt"
+            print(command)
+            os.system(command)

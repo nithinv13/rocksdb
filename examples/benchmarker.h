@@ -19,6 +19,7 @@ using namespace std;
 using namespace std::chrono;
 using namespace ROCKSDB_NAMESPACE;
 
+// int key_size = 8;
 
 uint64_t ExtractInteger(const char* pos, size_t size) {
     char* temp = new char[size + 1];
@@ -49,8 +50,8 @@ public:
     CustomComparator() = default;
     virtual const char* Name() const {return "adgMod:CustomComparator";}
     virtual int Compare(const Slice& a, const Slice& b) const {
-        uint64_t ia = (uint64_t)(stoll(a.ToString().substr(0, 8)));
-        uint64_t ib = (uint64_t)(stoll(b.ToString().substr(0, 8)));
+        uint64_t ia = (uint64_t)(stoll(a.ToString().substr(0, key_size)));
+        uint64_t ib = (uint64_t)(stoll(b.ToString().substr(0, key_size)));
         if (ia < ib) return -1;
         else if (ia == ib) return 0;
         else return 1;
