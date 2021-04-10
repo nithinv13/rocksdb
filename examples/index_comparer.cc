@@ -12,9 +12,9 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
     rocksdb::Status s;
     std::vector<std::string> written;
     for (uint64_t i = 0; i < num_entries; i++) {
-        if (i % 50000 == 0) {
-            cout << "Completed " << std::to_string(i) << " writes" << endl;
-        }
+        // if (i % 50000 == 0) {
+        //     cout << "Completed " << std::to_string(i) << " writes" << endl;
+        // }
         std::string key, value, final_key, final_value;
         if (seq) {
             key =  std::to_string(i);
@@ -31,6 +31,8 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
             final_value = string(value_size - value.length(), '0') + value;
         }
         written.push_back(final_key);
+        // printf("Final key %s\n", final_key.c_str());
+        // printf("Final value %s\n", final_value.c_str());
         s = db->Put(write_options, Slice(final_key), Slice(final_value));
         if (!s.ok()) { 
             printf("Error in writing key %s", key.c_str());
@@ -148,7 +150,7 @@ int main(int argc, char **argv) {
     // uint64_t output = (uint64_t)(stoll(input.substr(0, 22)));
     // cout << output << endl;
     // return 0;
-    printf("Key size in main %d\n", key_size);
+    // printf("Key size in main %d\n", key_size_changer);
     assert(argc == 6);
     dbName = argv[1];
     int num_operations = stoi(argv[2]);
@@ -236,8 +238,8 @@ int main(int argc, char **argv) {
             cout << "Option not available" << endl;
     }
     if (block_based_options.no_block_cache == false) {
-        block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
-        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024), true, 0.5);
+        block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
+        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     rocksdb::Status s = DB::Open(options, dbName, &db);
@@ -246,13 +248,13 @@ int main(int argc, char **argv) {
     int write_key_range = num_operations*10;
     int read_key_range = num_operations*10;
     // For random writes, make seq = false
-    auto written = write(db, num_operations, key_size, 100, true, false, write_key_range);
+    auto written = write(db, num_operations, key_size_changer, 100, true, false, write_key_range);
     // auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
-        block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size), true, 0.2);
-        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024), true, 0.2);
+        block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
+        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     options.statistics = rocksdb::CreateDBStatistics();
@@ -268,7 +270,7 @@ int main(int argc, char **argv) {
     // For reads from randomly written data, make random_writes = true
     // std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
     // bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {})
-    auto reading = read(db, 100001, learned_get, key_size, 100, true, false, read_key_range, written, true);
+    auto reading = read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, true);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -278,7 +280,7 @@ int main(int argc, char **argv) {
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    read(db, 100001, learned_get, key_size, 100, true, false, read_key_range, written, false, true, reading);
+    read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;

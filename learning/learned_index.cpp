@@ -52,9 +52,9 @@ namespace adgMod {
     }
 
     int Customcompare(const std::string a, const std::string b) {
-        printf("Key size in customcompare %d\n", key_size);
-        uint64_t ia = (uint64_t)(stoll(a.substr(0, key_size)));
-        uint64_t ib = (uint64_t)(stoll(b.substr(0, key_size)));
+        // printf("Key size in customcompare %d\n", key_size);
+        uint64_t ia = (uint64_t)(stoll(a.substr(0, key_size_changer)));
+        uint64_t ib = (uint64_t)(stoll(b.substr(0, key_size_changer)));
         if (ia < ib) return -1;
         else if (ia == ib) return 0;
         else return 1;
@@ -87,13 +87,13 @@ namespace adgMod {
         // uint32_t shared = segments[left].shared;
         // long double unshared_double = (long double)(stoll(target_key.ToString().substr(shared, shared + 8)));
         // long double result = unshared_double * segments[left].k + segments[left].b;
-        printf("Key size in learned_index.cpp %d\n", key_size);
-        long double result = (long double)(stoll(target_key.ToString().substr(0, key_size))) * segments[left].k + segments[left].b;
+        // printf("Key size in learned_index.cpp %d\n", key_size);
+        long double result = (long double)(stoll(target_key.ToString().substr(0, key_size_changer))) * segments[left].k + segments[left].b;
         // if (debug == 1) {
-        //     std::cout << "GetPosition point : " << target_key.ToString().substr(0, 8) << " " << segments[left].k << " " << segments[left].b << " \n";
+        //     std::cout << "GetPosition point : " << target_key.ToString().substr(0, key_size_changer) << " " << segments[left].k << " " << segments[left].b << " \n";
         // }
         if (left != segments.size()-2) {
-            long double next_block_offset = (long double)(stoll(segments[left+1].start_key.substr(0, key_size))) * segments[left+1].k + segments[left+1].b;
+            long double next_block_offset = (long double)(stoll(segments[left+1].start_key.substr(0, key_size_changer))) * segments[left+1].k + segments[left+1].b;
             if (next_block_offset < result)
                 // result -= data_block_sizes[data_block_sizes.size()-2]; // always exists since one block of data and one props block
                 result = next_block_offset - min_proper_block_size;

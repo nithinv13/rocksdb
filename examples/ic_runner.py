@@ -18,9 +18,11 @@ df[5] = 6567588
 #         print(command)
 #         os.system(command)
 
+database_sizes = [10000000, 15000000, 20000000]
 database_sizes = [5000000]
-table_cache_sizes = [str(i*100*1024) for i in range(0, 36)]
 for database_size in database_sizes:
+    # j = (int)(database_size / 5000000)
+    table_cache_sizes = [str(i*100*1024) for i in range(0, 36, 2)]
     for index in [1, 2, 4, 5]:
         for table_cache_size in table_cache_sizes:
             if index == 2:

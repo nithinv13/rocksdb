@@ -50,8 +50,8 @@ public:
     CustomComparator() = default;
     virtual const char* Name() const {return "adgMod:CustomComparator";}
     virtual int Compare(const Slice& a, const Slice& b) const {
-        uint64_t ia = (uint64_t)(stoll(a.ToString().substr(0, key_size)));
-        uint64_t ib = (uint64_t)(stoll(b.ToString().substr(0, key_size)));
+        uint64_t ia = (uint64_t)(stoll(a.ToString().substr(0, key_size_changer)));
+        uint64_t ib = (uint64_t)(stoll(b.ToString().substr(0, key_size_changer)));
         if (ia < ib) return -1;
         else if (ia == ib) return 0;
         else return 1;
