@@ -706,6 +706,9 @@ Status BlockBasedTable::Open(
   std::string file_name = (rep->file)->file_name();
   new_table->PrefetchLearnedIndexData(file_name);
 
+  if (rep->table_options.use_learning)
+    assert(rep->index_reader == nullptr);
+
   if (s.ok()) {
     // Update tail prefetch stats
     assert(prefetch_buffer.get() != nullptr);
@@ -950,6 +953,9 @@ Status BlockBasedTable::PrefetchIndexAndFilterBlocks(
     size_t file_size, size_t max_file_size_for_l0_meta_pin,
     BlockCacheLookupContext* lookup_context) {
   Status s;
+
+  if (rep_->table_options.use_learning)
+    return s;
 
   // Find filter handle and filter type
   if (rep_->filter_policy) {
@@ -1443,6 +1449,10 @@ InternalIteratorBase<IndexValue>* BlockBasedTable::NewIndexIterator(
     const ReadOptions& read_options, bool disable_prefix_seek,
     IndexBlockIter* input_iter, GetContext* get_context,
     BlockCacheLookupContext* lookup_context) const {
+
+  if (rep_->table_options.use_learning)
+    return nullptr;
+  
   assert(rep_ != nullptr);
   assert(rep_->index_reader != nullptr);
 
@@ -2202,7 +2212,7 @@ InternalIterator* BlockBasedTable::NewIterator(
         !skip_filters && !read_options.total_order_seek &&
             prefix_extractor != nullptr,
         need_upper_bound_check, prefix_extractor, caller,
-        compaction_readahead_size, allow_unprepared_value);
+        compaction_readahead_size, allow_unprepared_value, rep_->table_options.use_learning);
   } else {
     auto* mem = arena->AllocateAligned(sizeof(BlockBasedTableIterator));
     return new (mem) BlockBasedTableIterator(
@@ -3642,14 +3652,14 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     auto bounds = (rep_->lid).GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz));
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
-    // if (debug == 1) {
-    //   printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
-    // }
+    if (debug == 1) {
+      printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
+    }
     if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
     // maybe use average of data block sizes
     uint64_t offset_ = 0;
-    // uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
-    // printf("Bound is %ld\n", (long)bound);
+    uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
+    printf("Bound is %ld\n", (long)bound);
     long offset_lower = -1, offset_upper = -1;
     uint64_t lower_idx = (rep_->lid).data_block_sizes.size()-2, upper_idx = (rep_->lid).data_block_sizes.size() - 2;
 
@@ -3689,10 +3699,10 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;
 
-    // if (debug == 1) {
-    //   printf("Offset lower : %ld, Offset upper : %ld\n", (long)offset_lower, (long)offset_upper);
-    //   // printf("Block size %ld\n", (long)static_cast<uint64_t>(rep_->table_options.block_size));
-    // }
+    if (debug == 1) {
+      printf("Offset lower : %ld, Offset upper : %ld\n", (long)offset_lower, (long)offset_upper);
+      // printf("Block size %ld\n", (long)static_cast<uint64_t>(rep_->table_options.block_size));
+    }
 
     // std::vector<BlockHandle> block_handles{BlockHandle(offset_lower, static_cast<uint64_t>(rep_->table_options.block_size) - 100), 
     //                           BlockHandle(offset_upper, static_cast<uint64_t>(rep_->table_options.block_size) - 100)};

@@ -270,7 +270,7 @@ int main(int argc, char **argv) {
     // For reads from randomly written data, make random_writes = true
     // std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
     // bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {})
-    auto reading = read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, true);
+    auto reading = read(db, 10000, learned_get, key_size_changer, 100, true, false, read_key_range, written, true);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
+    // read(db, 10000, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;

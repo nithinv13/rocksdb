@@ -26,7 +26,7 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
       std::unique_ptr<InternalIteratorBase<IndexValue>>&& index_iter,
       bool check_filter, bool need_upper_bound_check,
       const SliceTransform* prefix_extractor, TableReaderCaller caller,
-      size_t compaction_readahead_size = 0, bool allow_unprepared_value = false)
+      size_t compaction_readahead_size = 0, bool allow_unprepared_value = false, bool use_learning = false)
       : table_(table),
         read_options_(read_options),
         icomp_(icomp),
@@ -39,7 +39,8 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
         allow_unprepared_value_(allow_unprepared_value),
         block_iter_points_to_real_block_(false),
         check_filter_(check_filter),
-        need_upper_bound_check_(need_upper_bound_check) {}
+        need_upper_bound_check_(need_upper_bound_check),
+        use_learning_(use_learning) {}
 
   ~BlockBasedTableIterator() {}
 
@@ -89,6 +90,9 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
     return block_iter_.value();
   }
   Status status() const override {
+    
+    if (use_learning_)
+      return Status::OK();
     // Prefix index set status to NotFound when the prefix does not exist
     if (!index_iter_->status().ok() && !index_iter_->status().IsNotFound()) {
       return index_iter_->status();
@@ -211,6 +215,8 @@ class BlockBasedTableIterator : public InternalIteratorBase<Slice> {
   bool check_filter_;
   // TODO(Zhongyi): pick a better name
   bool need_upper_bound_check_;
+
+  bool use_learning_;
 
   // If `target` is null, seek to first.
   void SeekImpl(const Slice* target);

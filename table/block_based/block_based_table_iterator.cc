@@ -14,6 +14,10 @@ void BlockBasedTableIterator::Seek(const Slice& target) { SeekImpl(&target); }
 void BlockBasedTableIterator::SeekToFirst() { SeekImpl(nullptr); }
 
 void BlockBasedTableIterator::SeekImpl(const Slice* target) {
+
+  // if (use_learning_)
+  //   return;
+
   is_out_of_bound_ = false;
   is_at_first_key_from_index_ = false;
   if (target && !CheckPrefixMayMatch(*target, IterDirection::kForward)) {
@@ -21,75 +25,82 @@ void BlockBasedTableIterator::SeekImpl(const Slice* target) {
     return;
   }
 
-  bool need_seek_index = true;
-  if (block_iter_points_to_real_block_ && block_iter_.Valid()) {
-    // Reseek.
-    prev_block_offset_ = index_iter_->value().handle.offset();
+  if (!use_learning_) {
+    bool need_seek_index = true;
+    if (block_iter_points_to_real_block_ && block_iter_.Valid()) {
+      // Reseek.
+      prev_block_offset_ = index_iter_->value().handle.offset();
 
-    if (target) {
-      // We can avoid an index seek if:
-      // 1. The new seek key is larger than the current key
-      // 2. The new seek key is within the upper bound of the block
-      // Since we don't necessarily know the internal key for either
-      // the current key or the upper bound, we check user keys and
-      // exclude the equality case. Considering internal keys can
-      // improve for the boundary cases, but it would complicate the
-      // code.
-      if (user_comparator_.Compare(ExtractUserKey(*target),
-                                   block_iter_.user_key()) > 0 &&
-          user_comparator_.Compare(ExtractUserKey(*target),
-                                   index_iter_->user_key()) < 0) {
-        need_seek_index = false;
+      if (target) {
+        // We can avoid an index seek if:
+        // 1. The new seek key is larger than the current key
+        // 2. The new seek key is within the upper bound of the block
+        // Since we don't necessarily know the internal key for either
+        // the current key or the upper bound, we check user keys and
+        // exclude the equality case. Considering internal keys can
+        // improve for the boundary cases, but it would complicate the
+        // code.
+        if (user_comparator_.Compare(ExtractUserKey(*target),
+                                    block_iter_.user_key()) > 0 &&
+            user_comparator_.Compare(ExtractUserKey(*target),
+                                    index_iter_->user_key()) < 0) {
+          need_seek_index = false;
+        }
       }
     }
-  }
 
-  if (need_seek_index) {
-    if (target) {
-      index_iter_->Seek(*target);
-    } else {
-      index_iter_->SeekToFirst();
+    if (need_seek_index) {
+      if (target) {
+        index_iter_->Seek(*target);
+      } else {
+        index_iter_->SeekToFirst();
+      }
+
+      if (!index_iter_->Valid()) {
+        ResetDataIter();
+        return;
+      }
     }
+  
 
-    if (!index_iter_->Valid()) {
+    IndexValue v = index_iter_->value();
+    const bool same_block = block_iter_points_to_real_block_ &&
+                            v.handle.offset() == prev_block_offset_;
+
+    if (!v.first_internal_key.empty() && !same_block &&
+        (!target || icomp_.Compare(*target, v.first_internal_key) <= 0) &&
+        allow_unprepared_value_) {
+      // Index contains the first key of the block, and it's >= target.
+      // We can defer reading the block.
+      is_at_first_key_from_index_ = true;
+      // ResetDataIter() will invalidate block_iter_. Thus, there is no need to
+      // call CheckDataBlockWithinUpperBound() to check for iterate_upper_bound
+      // as that will be done later when the data block is actually read.
       ResetDataIter();
-      return;
+    } else {
+      // Need to use the data block.
+      if (!same_block) {
+        InitDataBlock();
+      } else {
+        // When the user does a reseek, the iterate_upper_bound might have
+        // changed. CheckDataBlockWithinUpperBound() needs to be called
+        // explicitly if the reseek ends up in the same data block.
+        // If the reseek ends up in a different block, InitDataBlock() will do
+        // the iterator upper bound check.
+        CheckDataBlockWithinUpperBound();
+      }
+
+      if (target) {
+        block_iter_.Seek(*target);
+      } else {
+        block_iter_.SeekToFirst();
+      }
+      FindKeyForward();
     }
   }
-
-  IndexValue v = index_iter_->value();
-  const bool same_block = block_iter_points_to_real_block_ &&
-                          v.handle.offset() == prev_block_offset_;
-
-  if (!v.first_internal_key.empty() && !same_block &&
-      (!target || icomp_.Compare(*target, v.first_internal_key) <= 0) &&
-      allow_unprepared_value_) {
-    // Index contains the first key of the block, and it's >= target.
-    // We can defer reading the block.
-    is_at_first_key_from_index_ = true;
-    // ResetDataIter() will invalidate block_iter_. Thus, there is no need to
-    // call CheckDataBlockWithinUpperBound() to check for iterate_upper_bound
-    // as that will be done later when the data block is actually read.
+  else {
     ResetDataIter();
-  } else {
-    // Need to use the data block.
-    if (!same_block) {
-      InitDataBlock();
-    } else {
-      // When the user does a reseek, the iterate_upper_bound might have
-      // changed. CheckDataBlockWithinUpperBound() needs to be called
-      // explicitly if the reseek ends up in the same data block.
-      // If the reseek ends up in a different block, InitDataBlock() will do
-      // the iterator upper bound check.
-      CheckDataBlockWithinUpperBound();
-    }
-
-    if (target) {
-      block_iter_.Seek(*target);
-    } else {
-      block_iter_.SeekToFirst();
-    }
-    FindKeyForward();
+    return;
   }
 
   CheckOutOfBound();
