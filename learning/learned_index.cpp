@@ -212,6 +212,7 @@ namespace adgMod {
             output_file << sz << "\n";
         }
         output_file << "2441139" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
+        output_file.close();
     }
 
     void LearnedIndexData::ReadModel(const string &filename) {
@@ -260,6 +261,7 @@ namespace adgMod {
         for (size_t i = 0; i < data_block_sizes.size()-2; i++) {
                 min_proper_block_size = std::min(min_proper_block_size, data_block_sizes[i]);
         }
+        input_file.close();
         learned.store(true);
     }
 

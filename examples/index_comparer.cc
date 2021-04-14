@@ -1,6 +1,7 @@
 #include "benchmarker.h"
 #include "rocksdb/filter_policy.h"
 #include <thread>
+#include <algorithm>
 
 string dbName = "/tmp/learnedDB";
 DB* db;
@@ -245,10 +246,11 @@ int main(int argc, char **argv) {
     rocksdb::Status s = DB::Open(options, dbName, &db);
 
     // For random writes, multipy num_operations by a constant like 10
-    int write_key_range = num_operations*10;
-    int read_key_range = num_operations*10;
+    int fixed_key_range = 50000000;
+    int write_key_range = fixed_key_range;
+    int read_key_range = fixed_key_range;
     // For random writes, make seq = false
-    auto written = write(db, num_operations, key_size_changer, 100, true, false, write_key_range);
+    auto written = write(db, num_operations, key_size_changer, 130, true, false, write_key_range);
     // auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
     delete db;
@@ -257,11 +259,12 @@ int main(int argc, char **argv) {
         block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    removeObsoleteLearnedFiles(dbName);
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
     // DB::OpenForReadOnly(options, dbName, &db);
     // db->SetDBOptions({{"max_open_files", "6400*1024"}});
-    std::this_thread::sleep_for(std::chrono::seconds(5));
     printf("Starting to read now\n");
     // rocksdb::DBImpl* db_impl = dynamic_cast<DBImpl*>(db);
     // if (db_impl != nullptr) {
@@ -270,7 +273,7 @@ int main(int argc, char **argv) {
     // For reads from randomly written data, make random_writes = true
     // std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
     // bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {})
-    auto reading = read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, true);
+    auto reading = read(db, 100001, learned_get, key_size_changer, 130, true, false, read_key_range, written, true);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -280,7 +283,7 @@ int main(int argc, char **argv) {
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
+    read(db, 100001, learned_get, key_size_changer, 130, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;

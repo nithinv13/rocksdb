@@ -14,6 +14,10 @@
 #include <fstream>
 #include <dirent.h>
 #include <chrono>
+#include <dirent.h>
+#include <stdio.h>
+#include <iterator>
+#include <algorithm>
 
 using namespace std;
 using namespace std::chrono;
@@ -104,4 +108,35 @@ void measure_sizes() {
         perror ("");
         return;
     }
+}
+
+void removeObsoleteLearnedFiles(std::string directory) {
+	vector<std::string> files;
+	DIR *dir;
+	struct dirent *entry;
+	if ((dir = opendir(directory.c_str())) != NULL) {
+		while ((entry = readdir(dir)) != NULL) {
+			files.push_back(std::string(entry->d_name));
+		}
+		closedir(dir);
+	}
+	
+	for (auto p = files.begin(); p != files.end(); p++) {
+		std::string file_name = *p;
+		size_t start_pos = file_name.find(".txt");
+		if (start_pos != std::string::npos) {
+			std::string new_file = file_name;
+			new_file.replace(start_pos, new_file.length()-start_pos, ".sst");
+			// cout << file_name << " " << new_file << endl;
+			if (std::find(files.begin(), files.end(), new_file) == files.end()) {
+                std::string temp_dir = directory;
+                std::string file_delete = temp_dir.append("/").append(file_name);
+                // cout << file_delete << endl;
+				int i = remove(file_delete.c_str());
+                if (i != 0) {
+                    cout << "Not able to delete file" << endl;
+                }
+			}
+		}
+	}
 }
