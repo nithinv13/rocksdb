@@ -7,18 +7,18 @@ z = []
 segments = []
 m = []
 
-with open("/tmp/learnedDB/8.txt") as f:
-    lines = list(f.readlines())
-    for line in lines:
-        # print(line)
-        if (line.strip() == "Sizes"):
-            break 
-        segments.append(line.split())
-    for i in range(len(segments)):
-        segments[i][0] = int(segments[i][0])
-        segments[i][3] = float(segments[i][3])
-        segments[i][4] = float(segments[i][4])
-    print(segments[:5])
+# with open("/tmp/learnedDB/8.txt") as f:
+#     lines = list(f.readlines())
+#     for line in lines:
+#         # print(line)
+#         if (line.strip() == "Sizes"):
+#             break 
+#         segments.append(line.split())
+#     for i in range(len(segments)):
+#         segments[i][0] = int(segments[i][0])
+#         segments[i][3] = float(segments[i][3])
+#         segments[i][4] = float(segments[i][4])
+#     print(segments[:5])
         
 
 with open("/tmp/learnedDB/8.offsets") as f:

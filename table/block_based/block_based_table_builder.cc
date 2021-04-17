@@ -1830,13 +1830,14 @@ Status BlockBasedTableBuilder::Finish() {
     LID.WriteModel(file_name, r->block_content_sizes);
 
     // if (debug == 1) printf("=========== Sending key offsets ============\n");
-    // file_name = file_name.substr(0, file_name.find(".")).append(".offsets");
-    // std::ofstream output_file(file_name);
-    // output_file.precision(15);
-    // for (size_t i = 0; i < r->key_offsets.size(); i++) {
-    //   // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
-    //   output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
-    // }
+    file_name = file_name.substr(0, file_name.find(".")).append(".offsets");
+    std::ofstream output_file(file_name);
+    output_file.precision(15);
+    output_file << r->level_at_creation << std::endl;
+    for (size_t i = 0; i < r->key_offsets.size(); i++) {
+      // printf("%s -> %ld\n", r->key_offsets[i].first.c_str(), (long)r->key_offsets[i].second);
+      output_file << r->key_offsets[i].first.c_str() << " " << (long)r->key_offsets[i].second << std::endl;
+    }
   }
   
   return ret_status;

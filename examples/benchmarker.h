@@ -133,6 +133,9 @@ void removeObsoleteLearnedFiles(std::string directory) {
                 std::string file_delete = temp_dir.append("/").append(file_name);
                 // cout << file_delete << endl;
 				int i = remove(file_delete.c_str());
+                temp_dir = directory;
+                file_delete = temp_dir.append("/").append(file_name.replace(start_pos, file_name.length()-start_pos, ".offsets"));
+                i = remove(file_delete.c_str());
                 if (i != 0) {
                     cout << "Not able to delete file" << endl;
                 }

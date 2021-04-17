@@ -95,3 +95,5 @@ fuzz/proto/gen/
 fuzz/crash-*
 
 examples/hello
+examples/output.txt 
+examples/testfile.txt

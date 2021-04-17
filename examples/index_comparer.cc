@@ -2,6 +2,7 @@
 #include "rocksdb/filter_policy.h"
 #include <thread>
 #include <algorithm>
+#include <time.h>
 
 string dbName = "/tmp/learnedDB";
 DB* db;
@@ -61,6 +62,7 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
     // output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
     // std::ofstream read_latency_file(dbName.append("/read_latencies.txt"), std::ios_base::app | std::ios_base::out);
     ReadOptions read_options;
+    int v_size = v.size();
     std::vector<std::string> reading;
     if (use_learning) {
         read_options.learned_get = true;
@@ -88,7 +90,7 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
             val = key;
         }
         if (random_write) { 
-            key = v[i];
+            key = v[std::rand() % v_size];
             val = key;
         }
         if (pad) {
@@ -152,6 +154,15 @@ int main(int argc, char **argv) {
     // cout << output << endl;
     // return 0;
     // printf("Key size in main %d\n", key_size_changer);
+
+    // cout << RAND_MAX << endl;
+    // using clock = high_resolution_clock;
+    // constexpr auto num = clock::period::num; 
+    // constexpr auto den = clock::period::den;
+    // cout << num << " " << den << endl;
+    // // srand(high_resolution_clock::now().time_since_epoch().count());
+    // cout << rand() << " " << high_resolution_clock::now().time_since_epoch().count() << endl;
+    // return 0;
     assert(argc == 6);
     dbName = argv[1];
     int num_operations = stoi(argv[2]);
@@ -165,6 +176,7 @@ int main(int argc, char **argv) {
     // result = system(command.c_str());
     cout << "DB size: " << num_operations << " Index type: " << index_type << " Block cache size: " << block_cache_size << " Table cache size: " << table_cache_size << endl;
 
+    srand(time(0));
     // rocksdb::DB *db;
     rocksdb::Options options;
     options.statistics = rocksdb::CreateDBStatistics();
@@ -250,9 +262,10 @@ int main(int argc, char **argv) {
     int write_key_range = fixed_key_range;
     int read_key_range = fixed_key_range;
     // For random writes, make seq = false
-    auto written = write(db, num_operations, key_size_changer, 130, true, false, write_key_range);
+    auto written = write(db, num_operations, key_size_changer, 100, true, false, write_key_range);
     // auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
+    db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
         block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
@@ -273,7 +286,7 @@ int main(int argc, char **argv) {
     // For reads from randomly written data, make random_writes = true
     // std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
     // bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {})
-    auto reading = read(db, 100001, learned_get, key_size_changer, 130, true, false, read_key_range, written, true);
+    auto reading = read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, true);
 
     std::string out;
     db->GetProperty("rocksdb.options-statistics", &out);
@@ -283,7 +296,7 @@ int main(int argc, char **argv) {
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    read(db, 100001, learned_get, key_size_changer, 130, true, false, read_key_range, written, false, true, reading);
+    read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;
