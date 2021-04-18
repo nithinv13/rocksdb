@@ -87,6 +87,6 @@ def run_exps():
 
 if __name__ == "__main__":
     # get_SL_errors()
-    run_exps()
+    # run_exps()
     # get_bounds()
-    # get_offset_diff("004157.offsets")
+    get_offset_diff("004660.offsets")

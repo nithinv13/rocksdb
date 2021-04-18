@@ -265,6 +265,10 @@ int main(int argc, char **argv) {
     auto written = write(db, num_operations, key_size_changer, 100, true, false, write_key_range);
     // auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
+    Slice begin("00000000");
+    Slice end("50000000");
+    CompactRangeOptions compact_options;
+    s = db->CompactRange(compact_options, &begin, &end);
     db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
