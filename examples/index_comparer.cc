@@ -243,7 +243,8 @@ int main(int argc, char **argv) {
             break;
         case 5:
             block_based_options.model = kSimpleLR;
-            block_based_options.learn_blockwise = false;
+            block_based_options.learn_blockwise = true;
+            block_based_options.learn_block_num = true;
             block_based_options.use_learning = true;
             learned_get = true;
             break;
@@ -303,11 +304,11 @@ int main(int argc, char **argv) {
     db->GetProperty("rocksdb.options-statistics", &out);
     parse_output(out);
 
-    cout << "Reading second time" << endl;
+    // cout << "Reading second time" << endl;
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
-    read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
+    // read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, false, true, reading);
 
     db->GetProperty("rocksdb.estimate-table-readers-mem", &out);
     cout << "Table reader memory usage: " << out << endl;

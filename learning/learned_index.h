@@ -38,6 +38,7 @@ namespace adgMod {
         std::atomic<bool> learning;
 
         std::ifstream input_file;
+        std::vector<std::pair<uint64_t, long double> > simLR_bounds;
     public:
         // is the data of this model filled (ready for learning)
         bool filled;
@@ -79,7 +80,7 @@ namespace adgMod {
         // If the key is in the training set, the output interval guarantees to include the key
         // otherwise, the output is undefined!
         // If the output lower bound is larger than MaxPosition(), the target key is not in the file
-        std::pair<uint64_t, uint64_t> GetPosition(const Slice& key) const;
+        std::pair<uint64_t, uint64_t> GetPosition(const Slice& key, bool learn_block_num) const;
         uint64_t MaxPosition() const;
         double GetError() const;
         size_t GetApproximateSize() const;

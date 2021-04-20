@@ -3639,52 +3639,66 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     (void) file_meta;
     
     size_t ts_sz = rep_->internal_comparator.user_comparator()->timestamp_size();
-    auto bounds = (rep_->lid).GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz));
+    auto bounds = (rep_->lid).GetPosition(ExtractUserKeyAndStripTimestamp(key, ts_sz), rep_->table_options.learn_block_num);
     uint64_t lower = bounds.first;
     uint64_t upper = bounds.second;
     // if (debug == 1) {
     //   printf("Lb : %ld, Ub : %ld\n", (long)lower, (long)upper);
     // }
-    if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
-    // maybe use average of data block sizes
-    uint64_t offset_ = 0;
-    // uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
-    // printf("Bound is %ld\n", (long)bound);
+
     long offset_lower = -1, offset_upper = -1;
-    uint64_t lower_idx = (rep_->lid).data_block_sizes.size()-2, upper_idx = (rep_->lid).data_block_sizes.size() - 2;
+    uint64_t lower_idx, upper_idx;
 
-    for (size_t i = 0; i < (rep_->lid).data_block_sizes.size()-1; i++) {
-      if (i != 0) {
-        offset_ += (rep_->lid).data_block_sizes[i] + kBlockTrailerSize;
-      } else {
-        offset_ += (rep_->lid).data_block_sizes[i];
+    if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
+    
+    if (!rep_->table_options.learn_block_num) {
+      // maybe use average of data block sizes
+      uint64_t offset_ = 0;
+      // uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
+      // printf("Bound is %ld\n", (long)bound);
+      lower_idx = (rep_->lid).data_block_sizes.size()-2;
+      upper_idx = (rep_->lid).data_block_sizes.size() - 2;
+
+      for (size_t i = 0; i < (rep_->lid).data_block_sizes.size()-1; i++) {
+        if (i != 0) {
+          offset_ += (rep_->lid).data_block_sizes[i] + kBlockTrailerSize;
+        } else {
+          offset_ += (rep_->lid).data_block_sizes[i];
+        }
+        if (offset_ > lower) {
+          offset_lower = offset_ - (rep_->lid).data_block_sizes[i];
+          lower_idx = i;
+          break;
+        }
       }
-      if (offset_ > lower) {
-        offset_lower = offset_ - (rep_->lid).data_block_sizes[i];
-        lower_idx = i;
-        break;
+
+      if (offset_lower == -1)
+        offset_lower = offset_ - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2];
+
+      offset_ = 0;
+      for (size_t i = 0; i < (rep_->lid).data_block_sizes.size()-1; i++) {
+        if (i != 0) {
+          offset_ += (rep_->lid).data_block_sizes[i] + kBlockTrailerSize;
+        } else {
+          offset_ += (rep_->lid).data_block_sizes[i];
+        }
+        if (offset_ > upper) {
+          offset_upper = offset_ - (rep_->lid).data_block_sizes[i];
+          upper_idx = i;
+          break;
+        }
       }
+
+      if (offset_upper == -1)
+        offset_upper = offset_ - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2];
+
     }
-
-    if (offset_lower == -1)
-      offset_lower = offset_ - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2];
-
-    offset_ = 0;
-    for (size_t i = 0; i < (rep_->lid).data_block_sizes.size()-1; i++) {
-      if (i != 0) {
-        offset_ += (rep_->lid).data_block_sizes[i] + kBlockTrailerSize;
-      } else {
-        offset_ += (rep_->lid).data_block_sizes[i];
-      }
-      if (offset_ > upper) {
-        offset_upper = offset_ - (rep_->lid).data_block_sizes[i];
-        upper_idx = i;
-        break;
-      }
+    else {
+      offset_lower = lower;
+      offset_upper = lower;
+      lower_idx = upper;
+      upper_idx = upper;
     }
-
-    if (offset_upper == -1)
-      offset_upper = offset_ - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2];
 
     bool matched = false;  // if such user key matched a key in SST
     bool done = false;

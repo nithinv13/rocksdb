@@ -115,5 +115,5 @@ class SimLR {
     long size;
 public:
     SimLR();
-    std::vector<Segment> train(std::vector<std::pair<std::string, key_type> >& keys);
+    std::vector<Segment> train(std::vector<std::pair<std::string, key_type> >& keys,  std::vector<std::pair<uint64_t, long double> >& simLR_bounds);
 };

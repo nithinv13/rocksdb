@@ -60,7 +60,7 @@ namespace adgMod {
         else return 1;
     }
 
-    std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key) const {
+    std::pair<uint64_t, uint64_t> LearnedIndexData::GetPosition(const Slice& target_key, bool learn_block_num) const {
         assert(segments.size() > 1);
 
         // check if the key is within the model bounds
@@ -89,6 +89,22 @@ namespace adgMod {
         // long double result = unshared_double * segments[left].k + segments[left].b;
         // printf("Key size in learned_index.cpp %d\n", key_size);
         long double result = (long double)(stoll(target_key.ToString().substr(0, key_size_changer))) * segments[left].k + segments[left].b;
+        
+        // std::cout << "Pred? : " << result << std::endl;
+        if (learn_block_num) {
+            assert(!simLR_bounds.empty());
+            int idx = simLR_bounds.size()-1;
+            uint64_t offset = simLR_bounds[simLR_bounds.size()-2].first;
+            for (size_t i = 0; i < simLR_bounds.size()-1; i++) {
+                if (result < simLR_bounds[i].second - 1e-3) {
+                    offset = simLR_bounds[i-1].first;
+                    idx = i;
+                    break;
+                }
+            }
+            // std::cout << "Cutoff : " << simLR_bounds[idx].second << "\n";
+            return {offset, idx-1};
+        }
         // if (debug == 1) {
         //     std::cout << "GetPosition point : " << target_key.ToString().substr(0, key_size_changer) << " " << segments[left].k << " " << segments[left].b << " \n";
         // }
@@ -132,7 +148,7 @@ namespace adgMod {
             for (size_t i = 0; i < segments.size(); i++) {
                 res += segments[i].start_key.size() + seg_consts;
             }
-            res += sizeof(uint16_t)*data_block_sizes.size();
+            res += (sizeof(uint16_t)+sizeof(uint64_t) + sizeof(long double))*data_block_sizes.size();
             return res;
         }
     }
@@ -174,7 +190,7 @@ namespace adgMod {
             break;
 
         case kSimpleLR:
-            segs = simLR.train(keys_with_offsets);
+            segs = simLR.train(keys_with_offsets, simLR_bounds);
             break;
 
         default:
@@ -208,8 +224,12 @@ namespace adgMod {
             output_file << item.start_key.data() << " " << item.shared << " " << item.error << " " << item.k << " " << item.b << "\n";
         }
         output_file << "Sizes\n";
-        for (auto sz : block_content_sizes) {
-            output_file << sz << "\n";
+        // std::cout << "Block content size : " << block_content_sizes.size() << std::endl;
+        // for (auto sz : block_content_sizes) {
+        //     output_file << sz << "\n";
+        // }
+        for (size_t i = 0; i < block_content_sizes.size(); i++) {
+            output_file << block_content_sizes[i] << " " << simLR_bounds[i].first << " " << simLR_bounds[i].second << "\n";
         }
         output_file << "2441139" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
         output_file.close();
@@ -250,9 +270,13 @@ namespace adgMod {
         }
         while (true) {
             uint32_t data_block_size;
+            uint64_t offset;
+            long double pred;
             input_file >> data_block_size;
             if (data_block_size == 2441139) break;
+            input_file >> offset >> pred;
             data_block_sizes.push_back(data_block_size);
+            simLR_bounds.push_back({offset, pred});
         }
         // string min_key_str, max_key_str; 
         input_file >> min_key >> max_key >> size >> level;
@@ -283,7 +307,7 @@ namespace adgMod {
     std::pair<uint64_t, uint64_t> FileLearnedIndexData::GetPosition(const Slice &key, std::string file_name) {
         auto segments = file_to_segments[file_name];
         LearnedIndexData lid;
-        return lid.GetPosition(key);
+        return lid.GetPosition(key, false);
     }
 
     FileLearnedIndexData::~FileLearnedIndexData() {

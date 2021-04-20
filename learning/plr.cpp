@@ -408,7 +408,7 @@ SimLR::SimLR() {
 
 }
 
-std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >& keys) {
+std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >& keys, std::vector<std::pair<uint64_t, long double> >& simLR_bounds) {
 	
 	size = keys.size();
 	long double mean_x = 0, mean_y = 0, cum_xy = 0, cum_x2 = 0;
@@ -434,10 +434,12 @@ std::vector<Segment> SimLR::train(std::vector<std::pair<std::string, key_type> >
 		auto pred = slope * key + intercept;
 		auto err = abs(keys[i].second - pred);
 		// std::cout << err << " " ;
+        simLR_bounds.push_back({keys[i].second, pred});
+        
 		error = std::max((double)err, (double)error);
 	}
 	segments.push_back(Segment(keys[0].first, 0, error, slope, intercept));
-
+    simLR_bounds.push_back({0, -1});
 
 	// std::cout << std::endl << error << std::endl;
 	
