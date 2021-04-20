@@ -70,7 +70,7 @@ def get_offset_diff(file_name):
 def run_exps():
     os.system("rm nohup.out")
     database_sizes = [10000000, 15000000, 20000000]
-    database_sizes = [10000000]
+    database_sizes = [5000000]
     for database_size in database_sizes:
         # j = (int)(database_size / 5000000)
         table_cache_sizes = [str(i*100*1024) for i in range(96, 100, 8)]
@@ -86,7 +86,7 @@ def run_exps():
                 os.system(command)
 
 if __name__ == "__main__":
-    # get_SL_errors()
+    get_SL_errors()
     # run_exps()
     # get_bounds()
-    get_offset_diff("004660.offsets")
+    # get_offset_diff("004660.offsets")

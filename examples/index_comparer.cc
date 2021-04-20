@@ -13,6 +13,8 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
     WriteOptions write_options;
     rocksdb::Status s;
     std::vector<std::string> written;
+    std::default_random_engine generator(time(0));
+    std::uniform_int_distribution<uint64_t> distribution(0, key_range);
     for (uint64_t i = 0; i < num_entries; i++) {
         // if (i % 50000 == 0) {
         //     cout << "Completed " << std::to_string(i) << " writes" << endl;
@@ -24,6 +26,7 @@ int key_size = 8, int value_size = 100, bool pad = true, bool seq = true, int ke
         }
         else { 
             int rand = std::rand() % key_range;
+            // uint64_t rand = distribution(generator);
             key = std::to_string(rand);
             value = key;
         }
@@ -62,6 +65,8 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
     // output_file << "Table_reader_usage," << "Cache_usage," << "Pinned_usage" << "\n";
     // std::ofstream read_latency_file(dbName.append("/read_latencies.txt"), std::ios_base::app | std::ios_base::out);
     ReadOptions read_options;
+    std::default_random_engine generator(time(0));
+    std::uniform_int_distribution<uint64_t> distribution(0, key_range);
     int v_size = v.size();
     std::vector<std::string> reading;
     if (use_learning) {
@@ -90,7 +95,9 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
             val = key;
         }
         if (random_write) { 
-            key = v[std::rand() % v_size];
+            int rand_index = std::rand() % v_size;
+            // uint64_t rand_index = distribution(generator);
+            key = v[rand_index];
             val = key;
         }
         if (pad) {
@@ -236,7 +243,7 @@ int main(int argc, char **argv) {
             break;
         case 5:
             block_based_options.model = kSimpleLR;
-            block_based_options.learn_blockwise = true;
+            block_based_options.learn_blockwise = false;
             block_based_options.use_learning = true;
             learned_get = true;
             break;
@@ -265,10 +272,10 @@ int main(int argc, char **argv) {
     auto written = write(db, num_operations, key_size_changer, 100, true, false, write_key_range);
     // auto written = write(db, num_operations, 8, 100, true, true, write_key_range);
     // db->Close();
-    Slice begin("00000000");
-    Slice end("50000000");
-    CompactRangeOptions compact_options;
-    s = db->CompactRange(compact_options, &begin, &end);
+    // Slice begin("00000000");
+    // Slice end("50000000");
+    // CompactRangeOptions compact_options;
+    // s = db->CompactRange(compact_options, &begin, &end);
     db->Close();
     delete db;
     if (block_based_options.no_block_cache == false) {
