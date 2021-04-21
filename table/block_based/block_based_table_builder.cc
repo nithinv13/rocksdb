@@ -1827,7 +1827,7 @@ Status BlockBasedTableBuilder::Finish() {
     auto segs = LID.Learn(r->key_offsets, r->table_options.model, r->max_key, r->table_options.seg_cost);
     std::string file_name = r->file->file_name();
     file_name = file_name.substr(0, file_name.find(".")).append(".txt");
-    LID.WriteModel(file_name, r->block_content_sizes);
+    LID.WriteModel(file_name, r->block_content_sizes, r->table_options.learn_block_num);
 
     // if (debug == 1) printf("=========== Sending key offsets ============\n");
     file_name = file_name.substr(0, file_name.find(".")).append(".offsets");

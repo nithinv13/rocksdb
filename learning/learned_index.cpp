@@ -94,16 +94,14 @@ namespace adgMod {
         if (learn_block_num) {
             assert(!simLR_bounds.empty());
             int idx = simLR_bounds.size()-1;
-            uint64_t offset = simLR_bounds[simLR_bounds.size()-2].first;
             for (size_t i = 0; i < simLR_bounds.size()-1; i++) {
-                if (result < simLR_bounds[i].second - 1e-3) {
-                    offset = simLR_bounds[i-1].first;
+                if (result < simLR_bounds[i] - 1e-3) {
                     idx = i;
                     break;
                 }
             }
-            // std::cout << "Cutoff : " << simLR_bounds[idx].second << "\n";
-            return {offset, idx-1};
+            // std::cout << "Cutoff : " << simLR_bounds[idx] << "\n";
+            return {-1, idx-1};
         }
         // if (debug == 1) {
         //     std::cout << "GetPosition point : " << target_key.ToString().substr(0, key_size_changer) << " " << segments[left].k << " " << segments[left].b << " \n";
@@ -148,7 +146,7 @@ namespace adgMod {
             for (size_t i = 0; i < segments.size(); i++) {
                 res += segments[i].start_key.size() + seg_consts;
             }
-            res += (sizeof(uint16_t)+sizeof(uint64_t) + sizeof(long double))*data_block_sizes.size();
+            res += (sizeof(uint16_t) + sizeof(double))*data_block_sizes.size();
             return res;
         }
     }
@@ -215,7 +213,7 @@ namespace adgMod {
         } else return false;
     }
 
-    void LearnedIndexData::WriteModel(const string &filename, std::vector<uint64_t> block_content_sizes) {
+    void LearnedIndexData::WriteModel(const string &filename, std::vector<uint64_t> block_content_sizes, bool learn_block_num) {
         if (!learned.load()) return;
 
         std::ofstream output_file(filename);
@@ -229,13 +227,16 @@ namespace adgMod {
         //     output_file << sz << "\n";
         // }
         for (size_t i = 0; i < block_content_sizes.size(); i++) {
-            output_file << block_content_sizes[i] << " " << simLR_bounds[i].first << " " << simLR_bounds[i].second << "\n";
+            if (learn_block_num)
+                output_file << block_content_sizes[i] << " " << simLR_bounds[i] << "\n";
+            else
+                output_file << block_content_sizes[i] << "\n";;
         }
         output_file << "2441139" << " " << min_key << " " << max_key << " " << size << " " << level << " " << "\n";
         output_file.close();
     }
 
-    void LearnedIndexData::ReadModel(const string &filename) {
+    void LearnedIndexData::ReadModel(const string &filename, bool learn_block_num) {
         // if (debug == 1) {
         //     printf("Reading file : %s\n", filename.c_str());
         // }
@@ -270,20 +271,19 @@ namespace adgMod {
         }
         while (true) {
             uint32_t data_block_size;
-            uint64_t offset;
-            long double pred;
+            double pred;
             input_file >> data_block_size;
             if (data_block_size == 2441139) break;
-            input_file >> offset >> pred;
+            if (learn_block_num) input_file >> pred;
             data_block_sizes.push_back(data_block_size);
-            simLR_bounds.push_back({offset, pred});
+            if (learn_block_num) simLR_bounds.push_back(pred);
         }
         // string min_key_str, max_key_str; 
         input_file >> min_key >> max_key >> size >> level;
         // min_key = Slice(min_key_str);
         // max_key = Slice(max_key_str);
         for (size_t i = 0; i < data_block_sizes.size()-2; i++) {
-                min_proper_block_size = std::min(min_proper_block_size, data_block_sizes[i]);
+            min_proper_block_size = std::min(min_proper_block_size, data_block_sizes[i]);
         }
         input_file.close();
         learned.store(true);

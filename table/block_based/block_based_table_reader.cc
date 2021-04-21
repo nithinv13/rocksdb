@@ -1122,7 +1122,7 @@ void BlockBasedTable::PrefetchLearnedIndexData(std::string file_name) {
   // else {
   //     rep_->lid = cached[file_key];
   // }
-  (rep_->lid).ReadModel(file_name);
+  (rep_->lid).ReadModel(file_name, rep_->table_options.learn_block_num);
 }
 
 void BlockBasedTable::SetupForCompaction() {
@@ -3649,9 +3649,9 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
     long offset_lower = -1, offset_upper = -1;
     uint64_t lower_idx, upper_idx;
 
-    if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
-    
     if (!rep_->table_options.learn_block_num) {
+      if (lower > rep_->file_size) return Status::NotFound("Requested key not found");
+    
       // maybe use average of data block sizes
       uint64_t offset_ = 0;
       // uint64_t bound = rep_->file_size - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-1] - (rep_->lid).data_block_sizes[(rep_->lid).data_block_sizes.size()-2] - kBlockTrailerSize; 
@@ -3694,8 +3694,12 @@ Status BlockBasedTable::LearnedGet(const ReadOptions& read_options, const Slice&
 
     }
     else {
-      offset_lower = lower;
-      offset_upper = lower;
+      offset_lower = 0;
+      for (size_t i = 0; i < upper; i++) {
+        offset_lower += (rep_->lid).data_block_sizes[i]+kBlockTrailerSize;
+      }
+      offset_upper = offset_lower;
+      offset_lower = offset_upper;
       lower_idx = upper;
       upper_idx = upper;
     }

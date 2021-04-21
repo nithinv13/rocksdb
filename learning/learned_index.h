@@ -38,7 +38,7 @@ namespace adgMod {
         std::atomic<bool> learning;
 
         std::ifstream input_file;
-        std::vector<std::pair<uint64_t, long double> > simLR_bounds;
+        std::vector<double> simLR_bounds;
     public:
         // is the data of this model filled (ready for learning)
         bool filled;
@@ -90,8 +90,8 @@ namespace adgMod {
         bool Learned();
 
         // writing this model to disk and load this model from disk
-        void WriteModel(const string& filename, std::vector<uint64_t> block_content_sizes);
-        void ReadModel(const string& filename);
+        void WriteModel(const string& filename, std::vector<uint64_t> block_content_sizes, bool learn_block_num);
+        void ReadModel(const string& filename, bool learn_block_num);
         
         // print model stats
         void ReportStats();
