@@ -248,7 +248,14 @@ int main(int argc, char **argv) {
             block_based_options.use_learning = true;
             learned_get = true;
             break;
-        case 6:
+        case 6: 
+            block_based_options.model = kSimpleLR;
+            block_based_options.learn_blockwise = true;
+            block_based_options.learn_block_num = false;
+            block_based_options.use_learning = true;
+            learned_get = true;
+            break;
+        case 7:
             block_based_options.model = kStatPLR;
             block_based_options.learn_blockwise = true;
             block_based_options.seg_cost = 100000;
@@ -281,23 +288,20 @@ int main(int argc, char **argv) {
     delete db;
     if (block_based_options.no_block_cache == false) {
         block_based_options.block_cache =  NewLRUCache(static_cast<size_t>(block_cache_size));
-        block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
+        // block_based_options.block_cache_compressed =  NewLRUCache(static_cast<size_t>(100*1024*1024));
     }
     options.table_factory.reset(NewBlockBasedTableFactory(block_based_options));
     std::this_thread::sleep_for(std::chrono::seconds(5));
     removeObsoleteLearnedFiles(dbName);
     options.statistics = rocksdb::CreateDBStatistics();
     DB::Open(options, dbName, &db);
+    // db->SetOptions({{"disable_auto_compactions", "true"}});
     // DB::OpenForReadOnly(options, dbName, &db);
     // db->SetDBOptions({{"max_open_files", "6400*1024"}});
-    printf("Starting to read now\n");
-    // rocksdb::DBImpl* db_impl = dynamic_cast<DBImpl*>(db);
-    // if (db_impl != nullptr) {
-    //     db_impl->TEST_table_cache()->hit_count_ = 0;
-    // }
     // For reads from randomly written data, make random_writes = true
     // std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_learning = false, int key_size = 8, int value_size = 100,
     // bool pad = true, bool seq = true, int key_range = 1000000, std::vector<std::string> v = {}, bool random_write = false, bool previously_read = false, std::vector<std::string> already_read = {})
+    printf("Starting to read now\n");
     auto reading = read(db, 100001, learned_get, key_size_changer, 100, true, false, read_key_range, written, true);
 
     std::string out;

@@ -1150,9 +1150,9 @@ std::shared_ptr<const TableProperties> BlockBasedTable::GetTableProperties()
 
 size_t BlockBasedTable::ApproximateMemoryUsage() const {
   size_t usage = 0;
-  if (rep_->filter) {
-    usage += rep_->filter->ApproximateMemoryUsage();
-  }
+  // if (rep_->filter) {
+  //   usage += rep_->filter->ApproximateMemoryUsage();
+  // }
   if (rep_->index_reader) {
     usage += rep_->index_reader->ApproximateMemoryUsage();
   }
@@ -1161,9 +1161,9 @@ size_t BlockBasedTable::ApproximateMemoryUsage() const {
   }
   if (rep_->table_options.use_learning) {
     usage = (rep_->lid).GetApproximateSize();
-    if (rep_->filter) {
-      usage += rep_->filter->ApproximateMemoryUsage();
-    }
+    // if (rep_->filter) {
+    //   usage += rep_->filter->ApproximateMemoryUsage();
+    // }
   }
   return usage;
 }
