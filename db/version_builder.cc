@@ -896,6 +896,8 @@ class VersionBuilder::Rep {
     assert(table_cache_ != nullptr);
 
     size_t table_cache_capacity = table_cache_->get_cache()->GetCapacity();
+    // if (is_initial_load) 
+    //   printf("Table cache capacity in Load table handlers %lu\n", table_cache_capacity);
     bool always_load = (table_cache_capacity == TableCache::kInfiniteCapacity);
     size_t max_load = port::kMaxSizet;
 

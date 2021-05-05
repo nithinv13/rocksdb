@@ -66,6 +66,7 @@ def get_offset_diff(file_name):
 #         command = "./index_comparer /mydata/learnedDB 5000000 " + str(block_cache_size*1024*1024) + " " + str(index) + " >> /mydata/rocksdb/examples/output.txt"
 #         print(command)
 #         os.system(command)
+BLOCK_CACHE_SIZE = 2*1024*1024*1024 - 1
 
 def run_exps():
     os.system("rm nohup.out")
@@ -73,11 +74,11 @@ def run_exps():
     database_sizes = [10000000]
     for database_size in database_sizes:
         table_cache_sizes = [str(i*100*1024) for i in range(0, 100, 8)]
-        for index in [1, 2, 4, 5, 6]:
+        for index in [4]:
             for table_cache_size in table_cache_sizes:
                 if index == 2:
-                    block_cache_size = table_cache_size 
-                    table_cache_size = 200*1024
+                    block_cache_size = BLOCK_CACHE_SIZE 
+                    table_cache_size = 400*1024
                 else:
                     block_cache_size = 0
                 command = "./index_comparer /mydata/learnedDB " + str(database_size) + " " + str(block_cache_size) + " " + str(table_cache_size) + " " + str(index) + " >> /mydata/rocksdb/examples/output.txt"

@@ -68,6 +68,7 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
     std::default_random_engine generator(time(0));
     std::uniform_int_distribution<uint64_t> distribution(0, key_range);
     int v_size = v.size();
+    int already_read_size = already_read.size();
     std::vector<std::string> reading;
     if (use_learning) {
         read_options.learned_get = true;
@@ -79,6 +80,7 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
     uint64_t total_time = 0;
     std::string value;
     uint64_t found = 0;
+    int rand_index = 0;
     for (uint64_t i = 0; i < num_entries; i++) {
         if (i % 50000 == 0) {
             cout << "Completed " << std::to_string(i) << " reads" << endl;
@@ -95,7 +97,7 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
             val = key;
         }
         if (random_write) { 
-            int rand_index = std::rand() % v_size;
+            rand_index = std::rand() % v_size;
             // uint64_t rand_index = distribution(generator);
             key = v[rand_index];
             val = key;
@@ -105,7 +107,8 @@ std::vector<std::string> read(DB* db, uint64_t num_entries = 1000000, bool use_l
             final_value = string(value_size - val.length(), '0') + val;
         }
         if (previously_read) {
-            final_key = already_read[i];
+            rand_index = std::rand() % already_read_size;
+            final_key = already_read[rand_index];
             final_value = string(value_size - final_key.length(), '0') + final_key;
         }
         reading.push_back(final_key); 
@@ -242,6 +245,7 @@ int main(int argc, char **argv) {
             learned_get = true;
             break;
         case 5:
+            // block_based_options.index_type = BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch;
             block_based_options.model = kSimpleLR;
             block_based_options.learn_blockwise = true;
             block_based_options.learn_block_num = true;
@@ -308,7 +312,7 @@ int main(int argc, char **argv) {
     db->GetProperty("rocksdb.options-statistics", &out);
     parse_output(out);
 
-    // cout << "Reading second time" << endl;
+    cout << "Reading second time" << endl;
 
     // options.statistics = rocksdb::CreateDBStatistics();
     // bool dont_care = false;
